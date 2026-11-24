@@ -27,23 +27,28 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   lignes de cote + largeurs de baies ; mention fausse → alerte), `murs.py` (formes remplies d'épaisseur murale,
   rectangles ou polygones → vues → contour quelconque → façades, couche pleine, bandes hachurées ITE/ITI,
   ouvertures dans le mur ou l'isolant, angles, refends), `nord.py`, `extraction.py`, `controle.py`.
-  CLI : `cd src && python -m re2020.plans plan.pdf --controle plan.png`.
+  CLI : `python -m re2020.plans plan.pdf --controle plan.png`.
   Tests : plans synthétiques (rectangle ITE, L en ITI avec échelle fausse) + Domène M01 ; Charleville en attente du PDF.
   Limites : murs dessinés en aplat (pas seulement en traits), HSP non lue (coupe), pas de DXF.
-- `src/re2020/catalogues/` : compositions Pléiades, matériaux, Ψ Th-Bât, fiches ACV (INIES) — `data/catalogues/`.
-- `src/re2020/estimation/` : déperditions, besoins, Bbio/Cep simplifiés avec fourchette ; calibrage sur les cas de `data/references/`.
-- `src/re2020/acv/` : quantités par lot (13 lots), fiche par défaut → fiche spécifique recommandée, estimation Ic construction.
-- `src/re2020/rapport/` : PDF feuille de route dans l'ordre de saisie Pléiades (voir docs/knowledge.md §3).
+- `src/re2020/catalogues/` (fait) : JSON de `data/catalogues` → SQLite ; U multicouche (± 3 % des Up Pléiades),
+  recherche par type de paroi / U cible / matériau, épaisseur pour un U cible, λ +15 % si non certifié, Ψ ITE/ITI.
+- `src/re2020/estimation/` (fait) : modèle saisonnier calé sur le RSET Charleville (`data/references/charleville_calage.json`),
+  fourchette par sensibilités ; `references.py` affiche les écarts (Charleville −0,1 ; Domène M01 −10,5 pts de Bbio).
+- `src/re2020/propositions.py` (fait) : front de Pareto isolant x épaisseur, x menuiseries x systèmes, sous seuils −5 %, tri par coût.
+- `src/re2020/etude.py` + `src/re2020/rapport/` (fait) : chaîne complète et PDF feuille de route (WeasyPrint) dans l'ordre Pléiades.
+- `src/re2020/api.py` (fait) : FastAPI locale + page web (dépôt du plan → verdict, PDF, image de contrôle) ; études en SQLite dans `etudes/`.
+- `src/re2020/acv/` (à faire) : quantités par lot (13 lots), fiche par défaut → fiche spécifique, estimation Ic construction.
 - `tests/` : tests de non-régression sur Charleville, Boumnich, Domène.
 
 ## Feuille de route de développement
 1. Valider `seuils.py` (test OK). Compléter avec MbHSP/McHSP/MiHSP quand le texte du décret 2026-200 est disponible.
 2. Extraction de plans : fait (Domène M01 + plans synthétiques). Reste : valider sur le PDF Charleville
    (test prêt, valeurs RSET), murs dessinés en traits seuls, lecture des coupes (HSP, hauteurs d'étage), DXF.
-3. Moteur d'estimation simplifié : calibrer sur Charleville puis Domène/Boumnich/Les Ulis ; objectif ± 5 points de Bbio.
-4. Générateur de propositions : combinaisons isolant/épaisseur/système vérifiant les seuils, avec coût (catalogue produits).
-5. ACV : catalogue élément → fiche (modèle Boumnich) et estimation d'Ic construction par lot.
-6. Rapport PDF feuille de route + interface web simple.
+3. Estimation : faite et calée sur Charleville. Écart Domène M01 −10,5 pts (objectif ± 5) : il faut les plans et RSET
+   de Boumnich / Les Ulis / Domène 180 pour recaler (climat par zone, apports, Ψ menuiseries).
+4. Propositions : fait ; remplacer les prix indicatifs (supposés) de `data/catalogues/produits.json` par les prix fournisseur.
+5. ACV : catalogue élément → fiche (modèle Boumnich) et estimation d'Ic construction par lot (à faire).
+6. Rapport PDF + API/page web locale : fait. Frontend Next.js plus tard.
 7. Calibrage massif avec OPEE (data.gouv.fr) et RSEE XSD.
 
 ## Données de départ

@@ -94,8 +94,10 @@ def generer_html(e: dict) -> str:
     H.append(table(["Indicateur", "Estimation [fourchette]", "Seuil max", "Verdict"], lignes))
     if s["approx"]:
         H.append("<p class='alerte'>Seuils « approx » : MbHSP/McHSP inconnus (décret 2026-200).</p>")
-    H.append(f"<p>Sref : {fv(e['_trace_sref'])} — Ic construction max : {fv(e['ic_construction_max']['Ic_construction_max'])} "
-             f"<span class='note'>(ACV non estimée dans cette version)</span></p>")
+    a = e["acv"]
+    H.append(f"<p>Sref : {fv(e['_trace_sref'])} — Ic construction (DED) : {fv(a['Ic_construction']['par_defaut'])} / max "
+             f"{fv(a['Ic_construction_max'])} — avec FDES prioritaires : {fv(a['Ic_construction']['top_fiches'])} — "
+             f"Ic énergie : {fv(a['Ic_energie'])}</p>")
 
     # ---- 1. bibliothèque projet
     H.append("<h2>1. Bibliothèque projet</h2><p class='etape'>Pléiades › Bibliothèque › Parois / Menuiseries / Ponts thermiques</p>")
@@ -191,14 +193,31 @@ def generer_html(e: dict) -> str:
                     for p in pr["propositions"]]) if pr["propositions"] else "<p class='alerte'>Aucune combinaison du catalogue ne passe les seuils estimés.</p>")
 
     # ---- 11. ACV
+    a = e["acv"]
     H.append("<h2>11. ACV</h2><p class='etape'>Pléiades › ACV : inventaire par lot, PCE, fiches</p>")
-    H.append(f"<p>Seuil Ic construction : {fv(e['ic_construction_max']['Ic_construction_max'])}. "
-             "Inventaire par lot et Ic construction : à faire dans Pléiades (module ACV de l'outil à venir). "
-             "Remplacer les DED par des FDES spécifiques dès qu'elles existent (gain majeur).</p>")
+    vcls = {"sous le seuil": "ok", "au-dessus du seuil": "ko", "incertain": "moy"}
+    H.append(table(["Indicateur", "Estimation [fourchette]", "Seuil max", "Verdict"], [
+        ["Ic construction — fiches par défaut (DED)", fv(a["Ic_construction"]["par_defaut"]), fv(a["Ic_construction_max"]),
+         f"<span class='{vcls[a['verdict']['par_defaut']]}'>{a['verdict']['par_defaut']}</span>"],
+        [f"Ic construction — FDES sur les {len(a['recommandations'])} plus gros postes", fv(a["Ic_construction"]["top_fiches"]), "",
+         f"<span class='{vcls[a['verdict']['top_fiches']]}'>{a['verdict']['top_fiches']}</span>"],
+        ["Ic construction — toutes fiches spécifiques (borne basse)", fv(a["Ic_construction"]["tout_specifique"]), "",
+         f"<span class='{vcls[a['verdict']['tout_specifique']]}'>{a['verdict']['tout_specifique']}</span>"],
+        ["Ic énergie", fv(a["Ic_energie"]), fv(a["Ic_energie_max"]), ""]]))
+    H.append("<h3>Fiches à rechercher en priorité (INIES)</h3>" + table(["Lot", "Élément", "Remplacement", "Gain"],
+             [[str(r["lot"]), escape(r["element"]), escape(r["remplacer"]), f"−{r['gain_kg_m2']:g} kg/m²"] for r in a["recommandations"]]))
+    H.append("<h3>Inventaire par lot (quantités à saisir)</h3>" + table(["Lot", "Élément", "Quantité", "UF", "Fiche par défaut", "Ic (kg/m²)"],
+             [[str(l["lot"]), escape(l["libelle"]), fv(l["quantite"]), escape(l["uf"]),
+               escape(f"{l['fiche_defaut']['type']} {l['fiche_defaut']['ic']:g}") + badge(l["fiche_defaut"]), f"{l['ic_defaut_kg_m2']:.1f}"]
+              for l in a["elements"]]))
+    H.append(table(["Lot", "Ic par défaut", "Ic fiches spécifiques"],
+                   [[f"{k} — {escape(v['libelle'])}", f"{v['defaut']:g}", f"{v['specifique']:g}"] for k, v in a["par_lot"].items()]))
+    H.append(f"<p class='note'>Ic chantier : {fv(a['Ic_chantier'])}. Hypothèses : structure {fv(a['hypotheses']['structure'])}, "
+             f"plancher {fv(a['hypotheses']['plancher_intermediaire'])}, menuiseries {fv(a['hypotheses']['menuiseries'])}.</p>")
 
     # ---- 12. hypothèses, alertes, manquants
     H.append("<h2>12. Hypothèses à valider, alertes, données manquantes</h2>")
-    sup = list(_suppositions({"plan": plan, "hypotheses": hyp}))
+    sup = list(_suppositions({"plan": plan, "hypotheses": hyp, "acv": {"hypotheses": e["acv"]["hypotheses"]}}))
     H.append(table(["Donnée", "Valeur supposée", "Raison"],
                    [[escape(c), fv(v), escape(v.get("source", ""))] for c, v in sup]))
     H.append("<h3>Alertes</h3><ul>" + "".join(f"<li class='alerte'>{escape(a)}</li>" for a in e["alertes"]) + "</ul>")

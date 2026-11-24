@@ -56,7 +56,8 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
                           date_pc: str = Form(...), projet: str = Form("Projet sans nom"), sref: float | None = Form(None),
                           nb_logements: int = Form(1), hsp_m: float = Form(2.5), systeme: str | None = Form(None),
                           mb_hsp: float | None = Form(None), mc_hsp: float | None = Form(None),
-                          echelle: int | None = Form(None), angle_nord_deg: float | None = Form(None)):
+                          echelle: int | None = Form(None), angle_nord_deg: float | None = Form(None),
+                          structure: str = Form("parpaing"), plancher: str = Form("hourdis"), menuiserie: str = Form("pvc")):
         nom = (fichier.filename or "plan").lower()
         if nom.endswith(".dwg"):
             raise HTTPException(415, "DWG non lu : fournir un PDF vectoriel (ou un DXF).")
@@ -71,7 +72,8 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
         (d / "plan.pdf").write_bytes(contenu)
         p = Parametres(zone=zone, altitude_m=altitude_m, date_pc=date_pc, projet=projet, sref=sref or None,
                        nb_logements=nb_logements, hsp_m=hsp_m, systeme=systeme or None, mb_hsp=mb_hsp, mc_hsp=mc_hsp,
-                       echelle=echelle or None, angle_nord_deg=angle_nord_deg)
+                       echelle=echelle or None, angle_nord_deg=angle_nord_deg, structure=structure, plancher=plancher,
+                       menuiserie=menuiserie)
         ligne = [i, datetime.now().isoformat(timespec="seconds"), projet, fichier.filename, json.dumps(p.__dict__)]
         try:
             e = realiser_etude(d / "plan.pdf", p, catalogue)
@@ -84,7 +86,11 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
         image_controle(d / "plan.pdf", e["plan"], d / "controle.png")
         synthese = {"verdict": e["verdict"], "Bbio": e["estimation"]["Bbio"], "Cep": e["estimation"]["Cep"],
                     "Cep_nr": e["estimation"]["Cep_nr"], "seuils": {k: e["seuils"][k]["valeur"] for k in ("Bbio_max", "Cep_max", "Cep_nr_max")},
-                    "seuils_approx": e["seuils"]["approx"], "alertes": e["alertes"]}
+                    "seuils_approx": e["seuils"]["approx"], "alertes": e["alertes"],
+                    "acv": {"Ic_construction_defaut": e["acv"]["Ic_construction"]["par_defaut"],
+                            "Ic_construction_top_fiches": e["acv"]["Ic_construction"]["top_fiches"],
+                            "Ic_construction_max": e["acv"]["Ic_construction_max"]["valeur"],
+                            "Ic_energie": e["acv"]["Ic_energie"]}}
         db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "ok", None, json.dumps(synthese, ensure_ascii=False)))
         db.commit()
         return {"id": i, **synthese, "liens": {"etude": f"/api/etudes/{i}", "rapport": f"/api/etudes/{i}/rapport.pdf",
@@ -129,6 +135,8 @@ input,select{width:100%;padding:8px;box-sizing:border-box;border:1px solid #bbb;
 <div><label>Sref (m², facultatif)</label><input name="sref" type="number" step="0.1"></div></div>
 <div class="l2"><div><label>Système</label><select name="systeme">{{SYSTEMES}}</select></div>
 <div><label>HSP (m)</label><input name="hsp_m" type="number" step="0.01" value="2.5"></div></div>
+<div class="l2"><div><label>Structure (ACV)</label><select name="structure"><option value="parpaing">Blocs béton</option><option value="brique">Brique</option><option value="beton">Béton banché</option><option value="ossature_bois">Ossature bois</option></select></div>
+<div><label>Menuiseries (ACV)</label><select name="menuiserie"><option value="pvc">PVC</option><option value="alu">Aluminium</option></select></div></div>
 <button>Lancer l'étude</button></form><div id="res"></div>
 <script>
 const f=document.getElementById('f'),res=document.getElementById('res');
@@ -140,6 +148,7 @@ f.onsubmit=async ev=>{ev.preventDefault();res.textContent='Analyse en cours…';
  const ind=['Bbio','Cep','Cep_nr'].map(k=>`<li>${k} : <b>${j[k].valeur}</b> [${j[k].fourchette.join(' – ')}] / max ${j.seuils[k+'_max']} → <span class="${cls[j.verdict[k]]}">${j.verdict[k]}</span></li>`).join('');
  res.innerHTML=`<h2>Résultat</h2><ul>${ind}</ul>${j.seuils_approx?'<p class="moy">Seuils « approx » (MbHSP/McHSP inconnus).</p>':''}
  <p><a href="${j.liens.rapport}">Télécharger la feuille de route (PDF)</a> · <a href="${j.liens.controle}" target="_blank">Image de contrôle</a> · <a href="${j.liens.etude}" target="_blank">JSON</a></p>
+ <p>Ic construction (DED) : <b>${j.acv.Ic_construction_defaut.valeur}</b> → avec FDES prioritaires ${j.acv.Ic_construction_top_fiches.valeur} / max ${j.acv.Ic_construction_max} — Ic énergie ${j.acv.Ic_energie.valeur}</p>
  <h3>Alertes</h3><ul>${j.alertes.map(a=>'<li>'+a.replace(/</g,'&lt;')+'</li>').join('')}</ul>`;};
 </script></body></html>"""
 

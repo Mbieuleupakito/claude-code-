@@ -21,3 +21,7 @@ Les plans PDF et RSET clients sont ignorés par git (règle 5 de CLAUDE.md) : le
 ```
 Sort un JSON (valeurs tracées `lu` / `déduit` / `supposé`), un résumé dans le terminal et une image de contrôle
 (vert = emprise, orange = baies appariées, rouge = à vérifier, bleu = nord lu).
+
+## ACV : remplacer les ordres de grandeur par les vraies fiches
+Les valeurs de `data/catalogues/fiches_acv.json` sont supposées. Remplir `data/catalogues/fiches_acv_modele.csv`
+(export INIES / Pléiades) puis : `cat = CatalogueACV(); cat.importer_csv("mes_fiches.csv")` → les fiches passent en « lu ».

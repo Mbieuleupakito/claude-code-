@@ -1,0 +1,3 @@
+element;type;nom;id_inies;ic_kg_uf;role
+mur_parpaing;FDES collective;(nom de la fiche INIES);(n° INIES);(Ic en kg éq. CO2/UF);specifique
+menuiserie_pvc;DED;(nom de la DED);(n° INIES);(Ic);defaut

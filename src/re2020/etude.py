@@ -5,11 +5,12 @@ from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
 
+from .acv import CatalogueACV, estimer_acv
 from .catalogues import Catalogue
 from .estimation import entrees_depuis_plan, estimer
 from .plans import extraire_plan
 from .propositions import proposer
-from .seuils import ic_construction_max, seuils_energie, zone_normalisee
+from .seuils import seuils_energie, zone_normalisee
 from .trace import val
 
 
@@ -28,14 +29,19 @@ class Parametres:
     retour_isolant_menuiseries: bool | None = None
     echelle: int | None = None
     angle_nord_deg: float | None = None
+    structure: str = "parpaing"        # ACV : parpaing | brique | beton | ossature_bois
+    plancher: str = "hourdis"          # ACV : hourdis | bois
+    menuiserie: str = "pvc"            # ACV : pvc | alu
 
 
-def realiser_etude(pdf: str | Path, p: Parametres, catalogue: Catalogue | None = None) -> dict:
+def realiser_etude(pdf: str | Path, p: Parametres, catalogue: Catalogue | None = None,
+                   catalogue_acv: CatalogueACV | None = None) -> dict:
     plan = extraire_plan(pdf, hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=p.angle_nord_deg)
-    return etude_depuis_plan(plan, p, catalogue)
+    return etude_depuis_plan(plan, p, catalogue, catalogue_acv)
 
 
-def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = None) -> dict:
+def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = None,
+                      catalogue_acv: CatalogueACV | None = None) -> dict:
     cat = catalogue or Catalogue()
     zone = zone_normalisee(p.zone)
     entrees, hyp = entrees_depuis_plan(plan, zone, p.altitude_m, sref=p.sref, catalogue=cat, systeme=p.systeme,
@@ -43,14 +49,16 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     entrees.nb_logements = p.nb_logements
     sref = entrees.sref
     seuils = seuils_energie(zone, p.altitude_m, sref / p.nb_logements, p.date_pc, mb_hsp=p.mb_hsp, mc_hsp=p.mc_hsp)
-    ic = ic_construction_max(p.date_pc, sref / p.nb_logements, zone=zone, altitude_m=p.altitude_m)
     estimation = estimer(entrees)
     props = proposer(entrees, seuils, cat)
+    acv = estimer_acv(plan, entrees, estimation, p.date_pc, zone, p.altitude_m, entrees.systeme["nom"], p.nb_logements,
+                      p.structure, p.plancher, p.menuiserie, catalogue_acv)
 
     alertes = list(plan["alertes"]) + list(hyp.get("alertes", []))
     if seuils["approx"]:
         alertes.append("Seuils « approx » : MbHSP/McHSP (décret 2026-200) inconnus pour ce PC → les lire dans Pléiades "
                        "et les fournir pour un seuil exact.")
+    alertes += acv["alertes"]
     alertes.append("Certification des isolants à vérifier (ACERMI) : si non certifié, majorer λ de 15 % dans Pléiades "
                    "(non automatique).")
     verdict = {}
@@ -69,10 +77,10 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
                     "U": {k: round(v, 3) for k, v in entrees.U.items()}, "Sw": entrees.Sw,
                     "ponts_W_K": round(entrees.ponts_W_K, 1), "baies_m2": entrees.baies},
         "seuils": seuils,
-        "ic_construction_max": ic,
         "estimation": estimation,
         "verdict": verdict,
         "propositions": props,
+        "acv": acv,
         "alertes": alertes,
         "manquants": plan["manquants"],
         "_trace_sref": val(sref, hyp["Sref"]["tag"], hyp["Sref"]["source"], hyp["Sref"]["confiance"], "m²"),

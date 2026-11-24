@@ -193,6 +193,7 @@ def estimer(e: Entrees, sources: str = "plan + hypothèses") -> dict:
         "Cep_nr": fourchette("Cep_nr", "kWhep/m².an"),
         "sensibilite_Bbio_points": sensibilites,
         "consommations_kWhef_m2": {k: round(v, 1) for k, v in conso.items() if isinstance(v, float)},
+        "par_energie_kWhef_m2": {k: round(v, 2) for k, v in conso["par_energie"].items()},
         "systeme": conso["systeme"],
         "parametres": {"K_CAL": round(K_CAL, 4), "eta_apports": round(centre["eta"], 3), "Fs_baies": FS_BAIES,
                        "incertitudes": e.incertitude},

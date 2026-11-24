@@ -37,7 +37,10 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 - `src/re2020/propositions.py` (fait) : front de Pareto isolant x épaisseur, x menuiseries x systèmes, sous seuils −5 %, tri par coût.
 - `src/re2020/etude.py` + `src/re2020/rapport/` (fait) : chaîne complète et PDF feuille de route (WeasyPrint) dans l'ordre Pléiades.
 - `src/re2020/api.py` (fait) : FastAPI locale + page web (dépôt du plan → verdict, PDF, image de contrôle) ; études en SQLite dans `etudes/`.
-- `src/re2020/acv/` (à faire) : quantités par lot (13 lots), fiche par défaut → fiche spécifique, estimation Ic construction.
+- `src/re2020/acv/` (fait) : quantités par lot déduites du plan (ou supposées), catalogue `data/catalogues/fiches_acv.json`
+  (DED / FDES : ORDRES DE GRANDEUR SUPPOSÉS → importer les vraies fiches via `CatalogueACV.importer_csv`, modèle
+  `fiches_acv_modele.csv`), Ic construction en 3 scénarios (DED / FDES sur les 5 plus gros postes / tout FDES), seuil
+  avec modulations lots 1-2-13, Ic énergie (facteurs CO2 RE2020 x 50 ans), fiches INIES à rechercher en priorité.
 - `tests/` : tests de non-régression sur Charleville, Boumnich, Domène.
 
 ## Feuille de route de développement
@@ -47,7 +50,8 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 3. Estimation : faite et calée sur Charleville. Écart Domène M01 −10,5 pts (objectif ± 5) : il faut les plans et RSET
    de Boumnich / Les Ulis / Domène 180 pour recaler (climat par zone, apports, Ψ menuiseries).
 4. Propositions : fait ; remplacer les prix indicatifs (supposés) de `data/catalogues/produits.json` par les prix fournisseur.
-5. ACV : catalogue élément → fiche (modèle Boumnich) et estimation d'Ic construction par lot (à faire).
+5. ACV : fait (ordres de grandeur cohérents avec Boumnich : DED ≈ 600, −15 à −20 % avec FDES, Ic énergie ≈ 69).
+   Reste : importer les fiches INIES réelles, calibrer sur l'ACV Pléiades de Boumnich (inventaire par lot à récupérer).
 6. Rapport PDF + API/page web locale : fait. Frontend Next.js plus tard.
 7. Calibrage massif avec OPEE (data.gouv.fr) et RSEE XSD.
 

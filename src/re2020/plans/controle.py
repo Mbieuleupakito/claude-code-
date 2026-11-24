@@ -7,29 +7,16 @@ import pdfplumber
 
 
 def image_controle(chemin_pdf, resultat: dict, sortie_png, resolution: int = 110) -> None:
+    """Vert = contour des murs ; orange = baie appariée ; rouge = baie à vérifier ; bleu = nord lu."""
     with pdfplumber.open(chemin_pdf) as pdf:
-        p = pdf.pages[resultat.get("page", 0)]
-        im = p.to_image(resolution=resolution)
+        im = pdf.pages[resultat.get("page", 0)].to_image(resolution=resolution)
         for n in resultat["niveaux"]:
-            x0, y0, x1, y1 = n["_bbox_pt"]
-            im.draw_rect((x0, y0, x1, y1), fill=None, stroke=(0, 170, 0), stroke_width=3)
+            im.draw_line([tuple(c) for c in n["_contour_pt"]], stroke=(0, 170, 0), stroke_width=3)
             for b in n["baies"]:
-                ex, ey = b["_etiquette_pt"]
                 coul = (220, 0, 0) if b.get("a_verifier") else (255, 140, 0)
-                if b["_ouverture_pt"]:
-                    a, c = b["_ouverture_pt"]
-                    f = b["facade"]
-                    if f in ("haut", "bas"):
-                        y = y0 if f == "haut" else y1
-                        im.draw_rect((a, y - 4, c, y + 4), fill=coul + (120,), stroke=coul, stroke_width=1)
-                        cx, cy = (a + c) / 2, y
-                    else:
-                        x = x0 if f == "gauche" else x1
-                        im.draw_rect((x - 4, a, x + 4, c), fill=coul + (120,), stroke=coul, stroke_width=1)
-                        cx, cy = x, (a + c) / 2
-                    im.draw_line([(ex, ey), (cx, cy)], stroke=coul, stroke_width=1)
-                else:
-                    im.draw_circle((ex, ey), radius=6, fill=None, stroke=coul)
+                x0, y0, x1, y1 = b["_ouverture_pt"]
+                im.draw_line([(x0, y0), (x1, y1)], stroke=coul, stroke_width=7)
+                im.draw_line([tuple(b["_etiquette_pt"]), ((x0 + x1) / 2, (y0 + y1) / 2)], stroke=coul, stroke_width=1)
         nord = resultat["nord"]
         if nord.get("valeur") is not None:
             a = math.radians(nord["valeur"])

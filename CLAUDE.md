@@ -22,11 +22,14 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 - `src/re2020/seuils.py` : seuils et modulations (fait, testé) ; date de PC → HSP applicable ou non ;
   `hsp_implicites` retrouve MbHSP/McHSP depuis un seuil Pléiades. Paquet `re2020` en layout `src/`, Python 3.12, `.venv`.
 - `src/re2020/trace.py` : `val(valeur, tag, source, confiance)` — format commun des valeurs tracées.
-- `src/re2020/plans/` : extraction PDF vectoriel (pdfplumber) → JSON normalisé (fait, testé sur Domène M01) :
-  échelle lue, niveaux, emprise, couche pleine + bandes hachurées (ITE/ITI), baies (étiquettes + trous dans
-  l'isolant, texte vertical compris), symbole du nord → azimut/orientation, pièces, ml de ponts thermiques,
-  image de contrôle. CLI : `python -m src.re2020.plans plan.pdf --controle plan.png`.
-  Limites : murs en aplats rectangulaires, plan orthogonal et rectangulaire (sinon alerte), HSP non lue.
+- `src/re2020/plans/` : extraction PDF vectoriel (pdfplumber + shapely) → JSON normalisé (fait) :
+  `textes.py` (échelle, niveaux, étiquettes de baies, pièces), `echelle.py` (mention vérifiée par cotes écrites :
+  lignes de cote + largeurs de baies ; mention fausse → alerte), `murs.py` (formes remplies d'épaisseur murale,
+  rectangles ou polygones → vues → contour quelconque → façades, couche pleine, bandes hachurées ITE/ITI,
+  ouvertures dans le mur ou l'isolant, angles, refends), `nord.py`, `extraction.py`, `controle.py`.
+  CLI : `cd src && python -m re2020.plans plan.pdf --controle plan.png`.
+  Tests : plans synthétiques (rectangle ITE, L en ITI avec échelle fausse) + Domène M01 ; Charleville en attente du PDF.
+  Limites : murs dessinés en aplat (pas seulement en traits), HSP non lue (coupe), pas de DXF.
 - `src/re2020/catalogues/` : compositions Pléiades, matériaux, Ψ Th-Bât, fiches ACV (INIES) — `data/catalogues/`.
 - `src/re2020/estimation/` : déperditions, besoins, Bbio/Cep simplifiés avec fourchette ; calibrage sur les cas de `data/references/`.
 - `src/re2020/acv/` : quantités par lot (13 lots), fiche par défaut → fiche spécifique recommandée, estimation Ic construction.
@@ -35,8 +38,8 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 
 ## Feuille de route de développement
 1. Valider `seuils.py` (test OK). Compléter avec MbHSP/McHSP/MiHSP quand le texte du décret 2026-200 est disponible.
-2. Extraction de plans : fait pour Domène M01 (style ANKHA). Reste : Charleville (murs en hachures, pas d'aplat),
-   plans non rectangulaires, lecture des coupes (HSP, hauteurs d'étage), DXF.
+2. Extraction de plans : fait (Domène M01 + plans synthétiques). Reste : valider sur le PDF Charleville
+   (test prêt, valeurs RSET), murs dessinés en traits seuls, lecture des coupes (HSP, hauteurs d'étage), DXF.
 3. Moteur d'estimation simplifié : calibrer sur Charleville puis Domène/Boumnich/Les Ulis ; objectif ± 5 points de Bbio.
 4. Générateur de propositions : combinaisons isolant/épaisseur/système vérifiant les seuils, avec coût (catalogue produits).
 5. ACV : catalogue élément → fiche (modèle Boumnich) et estimation d'Ic construction par lot.

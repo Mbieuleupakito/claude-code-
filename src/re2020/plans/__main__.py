@@ -16,14 +16,18 @@ def resume(r: dict) -> str:
              else "Nord : NON DÉTECTÉ → passer --nord")
     for niv in r["niveaux"]:
         e, m = niv["emprise_m"], niv["murs_exterieurs"]
-        L.append(f"- {niv['niveau']['valeur']} : emprise {e['largeur']['valeur']} x {e['profondeur']['valeur']} m ; "
+        L.append(f"- {niv['niveau']['valeur']} ({niv['forme']['valeur']}) : emprise {e['largeur']['valeur']} x {e['profondeur']['valeur']} m ; "
                  f"surface int. {niv['surface_interieure_m2']['valeur']} m² (pièces lues {niv['surface_pieces_etiquetees_m2']['valeur']} m²) ; "
-                 f"mur {m['couche_pleine_m']['valeur']} + hachures ext. {m['bande_hachuree_ext_m']['valeur']} / int. {m['bande_hachuree_int_m']['valeur']} m → {m['isolation']['valeur']}")
+                 f"mur {m['couche_pleine_m']['valeur']} + hachures ext. {m['bande_hachuree_ext_m']['valeur']} / int. "
+                 f"{m['bande_hachuree_int_m']['valeur']} m → {m['isolation']['valeur']}")
         for b in niv["baies"]:
             flag = "  ⚠ " + b["a_verifier"] if b.get("a_verifier") else ""
-            L.append(f"    {b['nom'] or '?':8s} {b['orientation'] or b['facade']:3s} {b['largeur_m']['valeur']:.2f} x {b['hauteur_m']['valeur']:.2f} m{flag}")
+            o = b["orientation"] or b["facade"]
+            L.append(f"    {b['nom'] or '?':8s} {o:3s} {b['largeur_m']['valeur']:.2f} x {b['hauteur_m']['valeur']:.2f} m{flag}")
     bat = r["batiment"]
     L.append(f"Baies par orientation (m²) : {bat['baies_par_orientation_m2']} — total {bat['baies_total_m2']}")
+    pt = bat["ponts_thermiques"]
+    L.append("Ponts thermiques (ml) : " + " ; ".join(f"{v['liaison']} {v['valeur']}" for v in pt.values()))
     L.append(f"Surface intérieure totale : {bat['surface_interieure_totale_m2']['valeur']} m² (HSP supposée {bat['hauteur_sous_plafond_m']['valeur']} m)")
     if r["alertes"]:
         L.append("Alertes :")

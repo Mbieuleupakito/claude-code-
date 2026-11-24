@@ -1,0 +1,17 @@
+{
+ "source": "RSET Pléiades Charleville (charleville_rset.txt), chapitre 3 et feuillets",
+ "sref": 212.2, "zone": "H1b", "altitude_m": 150, "nb_logements": 1, "isolation": "ITE",
+ "surfaces_m2": {"toiture": 136.2, "murs": 231.8, "baies": 45.5, "plancher_bas": 126.7},
+ "U": {"toiture": 0.10, "murs": 0.18, "baies": 1.35, "plancher_bas": 0.10},
+ "baies_par_orientation_m2": {"S": 18.4, "O": 17.44, "N": 0.84, "E": 8.85},
+ "Sw_baies": 0.42, "Sw_tag": "supposé (alu RPT double vitrage, non lu)",
+ "ponts_thermiques": {"longueur_ml": 326.1, "deperdition_W_K": 53.19},
+ "ventilation": {"qv_m3h": 52.18, "type": "simple flux hygro B"},
+ "permeabilite": {"q4_m3h_m2": 0.6, "at_hors_pb_m2": 413.5, "deperdition_W_K": 69.46},
+ "deperditions_W_K": {"toiture": 14.25, "murs": 42.75, "baies": 61.33, "plancher_bas": 12.19, "ponts_thermiques": 53.19,
+                      "ventilation": 17.74, "permeabilite": 69.46, "total": 270.91},
+ "besoins_kWh_m2": {"chauffage": 28.9, "froid": 1.0, "eclairage": 1.8},
+ "bbio": 68.9, "cep": 40.3, "cep_nr": 40.3,
+ "consommations_kWhef_m2": {"chauffage": 11.2, "ecs": 4.5, "eclairage": 1.8},
+ "systeme": "PAC air/eau double service"
+}

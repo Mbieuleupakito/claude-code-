@@ -56,3 +56,31 @@ def test_plan_sans_murs(client):
     assert r.status_code == 422 and "non exploitable" in r.json()["detail"]
     assert client.get("/api/etudes/inexistant").status_code == 404
     assert client.get("/api/etudes/..").status_code == 404
+
+
+def test_mot_de_passe(tmp_path, plan_pdf):
+    c = TestClient(creer_app(tmp_path, mot_de_passe="secret"))
+    assert c.get("/").status_code == 401
+    assert c.get("/", auth=("x", "faux")).status_code == 401
+    assert c.get("/", auth=("honore", "secret")).status_code == 200
+
+
+def test_rapport_html_si_pdf_impossible(tmp_path, plan_pdf, monkeypatch):
+    import re2020.api as api
+
+    def panne(*a, **k):
+        raise OSError("cannot load library 'libpango'")
+    monkeypatch.setattr(api, "generer_pdf", panne)
+    c = TestClient(creer_app(tmp_path))
+    j = c.post("/api/etudes", files={"fichier": ("plan.pdf", plan_pdf, "application/pdf")},
+               data={"zone": "H1b", "altitude_m": "150", "date_pc": "2026-11-17"}).json()
+    assert j["liens"]["rapport"].endswith("rapport.html")
+    r = c.get(j["liens"]["rapport"])
+    assert r.status_code == 200 and "Feuille de route RE2020" in r.text
+    assert c.get(f"/api/etudes/{j['id']}/rapport.pdf").status_code == 404
+
+
+def test_mode_reseau_exige_un_mot_de_passe():
+    from re2020.api import main
+    with pytest.raises(SystemExit):
+        main(["--reseau", "--sans-navigateur"])

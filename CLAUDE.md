@@ -36,7 +36,9 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   fourchette par sensibilités ; `references.py` affiche les écarts (Charleville −0,1 ; Domène M01 −10,5 pts de Bbio).
 - `src/re2020/propositions.py` (fait) : front de Pareto isolant x épaisseur, x menuiseries x systèmes, sous seuils −5 %, tri par coût.
 - `src/re2020/etude.py` + `src/re2020/rapport/` (fait) : chaîne complète et PDF feuille de route (WeasyPrint) dans l'ordre Pléiades.
-- `src/re2020/api.py` (fait) : FastAPI locale + page web (dépôt du plan → verdict, PDF, image de contrôle) ; études en SQLite dans `etudes/`.
+- `src/re2020/api.py` (fait) : FastAPI locale + page web (dépôt du plan → verdict, PDF ou HTML imprimable, image de contrôle,
+  « Mes études ») ; études en SQLite dans `etudes/`. Lanceurs `lancer.bat` / `lancer.command` (installation auto au 1er
+  lancement) ; `--reseau --mot-de-passe` pour le téléphone ; `Dockerfile` pour un serveur interne (phase entreprise).
 - `src/re2020/acv/` (fait) : quantités par lot déduites du plan (ou supposées), catalogue `data/catalogues/fiches_acv.json`
   (DED / FDES : ORDRES DE GRANDEUR SUPPOSÉS → importer les vraies fiches via `CatalogueACV.importer_csv`, modèle
   `fiches_acv_modele.csv`), Ic construction en 3 scénarios (DED / FDES sur les 5 plus gros postes / tout FDES), seuil

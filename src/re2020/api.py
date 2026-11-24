@@ -3,32 +3,41 @@
 Tout reste sur la machine (CLAUDE.md, règle 5) : stockage SQLite + fichiers dans ``RE2020_DONNEES``
 (défaut ``./etudes``), page web sans ressource externe, serveur lié à 127.0.0.1.
 
-Lancer : ``python -m re2020.api``  puis ouvrir http://127.0.0.1:8000
+Lancer : ``python -m re2020.api`` (ouvre le navigateur sur http://127.0.0.1:8000)
+Depuis le téléphone (même wifi) : ``python -m re2020.api --reseau --mot-de-passe XXXX``
+Ou double-cliquer ``lancer.bat`` (Windows) / ``lancer.command`` (Mac).
 """
 from __future__ import annotations
 
+import argparse
+import base64
 import json
 import os
 import re
+import secrets
+import socket
 import sqlite3
+import threading
 import uuid
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from .catalogues import Catalogue
 from .etude import Parametres, realiser_etude
 from .plans.controle import image_controle
-from .rapport import generer_pdf
+from .rapport import generer_html, generer_pdf
 from .seuils import ZONES
 
 SCHEMA = """CREATE TABLE IF NOT EXISTS etudes (id TEXT PRIMARY KEY, cree TEXT, projet TEXT, fichier TEXT,
             parametres TEXT, statut TEXT, erreur TEXT, synthese TEXT)"""
 
 
-def creer_app(dossier: str | Path | None = None) -> FastAPI:
+def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None) -> FastAPI:
+    mot_de_passe = mot_de_passe or os.environ.get("RE2020_MOT_DE_PASSE") or None
     racine = Path(dossier or os.environ.get("RE2020_DONNEES", "etudes")).resolve()
     racine.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(racine / "etudes.sqlite", check_same_thread=False)
@@ -37,6 +46,23 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
     catalogue = Catalogue()
     app = FastAPI(title="Assistant RE2020 — DEEP-WATT", version="0.2.0",
                   description="Prépare la saisie Pléiades à partir des plans. Estimation, pas un calcul réglementaire.")
+
+    if mot_de_passe:
+        @app.middleware("http")
+        async def authentification(request: Request, call_next):
+            """Mot de passe d'accès (authentification HTTP Basic, identifiant libre)."""
+            h = request.headers.get("authorization", "")
+            ok = False
+            if h.startswith("Basic "):
+                try:
+                    _, _, mdp = base64.b64decode(h[6:]).decode("utf-8").partition(":")
+                    ok = secrets.compare_digest(mdp, mot_de_passe)
+                except (ValueError, UnicodeDecodeError):
+                    ok = False
+            if not ok:
+                return Response("Mot de passe requis", status_code=401,
+                                headers={"WWW-Authenticate": 'Basic realm="Assistant RE2020"'})
+            return await call_next(request)
 
     def dossier_etude(i: str) -> Path:
         if not re.fullmatch(r"[0-9a-f]{12}", i):
@@ -82,7 +108,11 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
             db.commit()
             raise HTTPException(422, f"Plan non exploitable : {exc}")
         (d / "etude.json").write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
-        generer_pdf(e, d / "feuille_de_route.pdf")
+        (d / "feuille_de_route.html").write_text(generer_html(e), encoding="utf-8")
+        try:
+            generer_pdf(e, d / "feuille_de_route.pdf")
+        except Exception:  # WeasyPrint sans ses bibliothèques système (souvent sous Windows) : HTML imprimable
+            pass
         image_controle(d / "plan.pdf", e["plan"], d / "controle.png")
         synthese = {"verdict": e["verdict"], "Bbio": e["estimation"]["Bbio"], "Cep": e["estimation"]["Cep"],
                     "Cep_nr": e["estimation"]["Cep_nr"], "seuils": {k: e["seuils"][k]["valeur"] for k in ("Bbio_max", "Cep_max", "Cep_nr_max")},
@@ -93,7 +123,10 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
                             "Ic_energie": e["acv"]["Ic_energie"]}}
         db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "ok", None, json.dumps(synthese, ensure_ascii=False)))
         db.commit()
-        return {"id": i, **synthese, "liens": {"etude": f"/api/etudes/{i}", "rapport": f"/api/etudes/{i}/rapport.pdf",
+        pdf_ok = (d / "feuille_de_route.pdf").exists()
+        return {"id": i, **synthese, "liens": {"etude": f"/api/etudes/{i}",
+                                               "rapport": f"/api/etudes/{i}/rapport.pdf" if pdf_ok else f"/api/etudes/{i}/rapport.html",
+                                               "rapport_html": f"/api/etudes/{i}/rapport.html",
                                                "controle": f"/api/etudes/{i}/controle.png"}}
 
     @app.get("/api/etudes")
@@ -107,7 +140,13 @@ def creer_app(dossier: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/etudes/{i}/rapport.pdf")
     def rapport(i: str):
+        if not (dossier_etude(i) / "feuille_de_route.pdf").exists():
+            raise HTTPException(404, "PDF indisponible (WeasyPrint) : utiliser rapport.html puis Imprimer → PDF")
         return FileResponse(dossier_etude(i) / "feuille_de_route.pdf", media_type="application/pdf", filename=f"feuille_de_route_{i}.pdf")
+
+    @app.get("/api/etudes/{i}/rapport.html", response_class=HTMLResponse)
+    def rapport_html(i: str):
+        return (dossier_etude(i) / "feuille_de_route.html").read_text(encoding="utf-8")
 
     @app.get("/api/etudes/{i}/controle.png")
     def controle(i: str):
@@ -138,24 +177,56 @@ input,select{width:100%;padding:8px;box-sizing:border-box;border:1px solid #bbb;
 <div class="l2"><div><label>Structure (ACV)</label><select name="structure"><option value="parpaing">Blocs béton</option><option value="brique">Brique</option><option value="beton">Béton banché</option><option value="ossature_bois">Ossature bois</option></select></div>
 <div><label>Menuiseries (ACV)</label><select name="menuiserie"><option value="pvc">PVC</option><option value="alu">Aluminium</option></select></div></div>
 <button>Lancer l'étude</button></form><div id="res"></div>
+<h2>Mes études</h2><ul id="liste" class="note"></ul>
 <script>
 const f=document.getElementById('f'),res=document.getElementById('res');
 const cls={"conforme probable":"ok","non conforme probable":"ko","incertain":"moy"};
+const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function lister(){const r=await fetch('/api/etudes');if(!r.ok)return;const l=await r.json();
+ document.getElementById('liste').innerHTML=l.map(e=>e.statut==='ok'?`<li>${e.cree.replace('T',' ')} — ${esc(e.projet)} : <a href="/api/etudes/${e.id}/rapport.html" target="_blank">feuille de route</a> · <a href="/api/etudes/${e.id}/controle.png" target="_blank">contrôle</a></li>`:`<li>${e.cree.replace('T',' ')} — ${esc(e.projet)} : erreur (${esc(e.erreur)})</li>`).join('')||'<li>Aucune étude pour l’instant.</li>';}
+lister();
 f.onsubmit=async ev=>{ev.preventDefault();res.textContent='Analyse en cours…';
  const fd=new FormData(f);for(const k of ['sref']) if(!fd.get(k)) fd.delete(k);
  const r=await fetch('/api/etudes',{method:'POST',body:fd});const j=await r.json();
  if(!r.ok){res.innerHTML='<p class="ko">'+(j.detail||'Erreur')+'</p>';return;}
  const ind=['Bbio','Cep','Cep_nr'].map(k=>`<li>${k} : <b>${j[k].valeur}</b> [${j[k].fourchette.join(' – ')}] / max ${j.seuils[k+'_max']} → <span class="${cls[j.verdict[k]]}">${j.verdict[k]}</span></li>`).join('');
  res.innerHTML=`<h2>Résultat</h2><ul>${ind}</ul>${j.seuils_approx?'<p class="moy">Seuils « approx » (MbHSP/McHSP inconnus).</p>':''}
- <p><a href="${j.liens.rapport}">Télécharger la feuille de route (PDF)</a> · <a href="${j.liens.controle}" target="_blank">Image de contrôle</a> · <a href="${j.liens.etude}" target="_blank">JSON</a></p>
+ <p><a href="${j.liens.rapport}">Feuille de route (PDF)</a> · <a href="${j.liens.rapport_html}" target="_blank">version web</a> · <a href="${j.liens.controle}" target="_blank">Image de contrôle</a> · <a href="${j.liens.etude}" target="_blank">JSON</a></p>
  <p>Ic construction (DED) : <b>${j.acv.Ic_construction_defaut.valeur}</b> → avec FDES prioritaires ${j.acv.Ic_construction_top_fiches.valeur} / max ${j.acv.Ic_construction_max} — Ic énergie ${j.acv.Ic_energie.valeur}</p>
- <h3>Alertes</h3><ul>${j.alertes.map(a=>'<li>'+a.replace(/</g,'&lt;')+'</li>').join('')}</ul>`;};
+ <h3>Alertes</h3><ul>${j.alertes.map(a=>'<li>'+a.replace(/</g,'&lt;')+'</li>').join('')}</ul>`;lister();};
 </script></body></html>"""
 
 
-app = None  # créé à la demande (uvicorn re2020.api:creer_app --factory)
+def _ip_locale() -> str:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as so:
+            so.connect(("10.255.255.255", 1))  # aucune donnée envoyée : sert seulement à choisir l'interface
+            return so.getsockname()[0]
+    except OSError:
+        return "adresse-de-ce-pc"
 
-if __name__ == "__main__":
+
+def main(argv=None):
     import uvicorn
 
-    uvicorn.run(creer_app(), host="127.0.0.1", port=int(os.environ.get("PORT", 8000)))
+    ap = argparse.ArgumentParser(description="Assistant RE2020 — serveur local")
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)))
+    ap.add_argument("--reseau", action="store_true", help="accessible depuis le téléphone / le réseau local (mot de passe obligatoire)")
+    ap.add_argument("--mot-de-passe", default=os.environ.get("RE2020_MOT_DE_PASSE"))
+    ap.add_argument("--sans-navigateur", action="store_true")
+    a = ap.parse_args(argv)
+    if a.reseau and not a.mot_de_passe:
+        ap.error("--reseau exige --mot-de-passe (les plans clients ne doivent pas être accessibles sans protection)")
+    hote = "0.0.0.0" if a.reseau else "127.0.0.1"
+    url = f"http://127.0.0.1:{a.port}"
+    print(f"\n  Assistant RE2020 prêt : {url}")
+    if a.reseau:
+        print(f"  Depuis le téléphone (même wifi) : http://{_ip_locale()}:{a.port}  (mot de passe demandé)")
+    print("  Fermer cette fenêtre pour arrêter.\n")
+    if not a.sans_navigateur:
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    uvicorn.run(creer_app(mot_de_passe=a.mot_de_passe), host=hote, port=a.port, log_level="warning")
+
+
+if __name__ == "__main__":
+    main()

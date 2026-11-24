@@ -1,0 +1,8 @@
+services:
+  re2020:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      RE2020_MOT_DE_PASSE: ${RE2020_MOT_DE_PASSE:?définir RE2020_MOT_DE_PASSE dans .env}
+    volumes: ["./etudes:/donnees"]
+    restart: unless-stopped

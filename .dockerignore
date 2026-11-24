@@ -1,0 +1,6 @@
+.venv
+etudes
+**/__pycache__
+*.pdf
+data/references/*_rset.txt
+.git

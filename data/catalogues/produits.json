@@ -1,0 +1,27 @@
+{
+ "source": "Familles d'isolants génériques pour le générateur de propositions",
+ "avertissement": "prix indicatifs (matériau seul, HT) SUPPOSÉS : à remplacer par le catalogue fournisseur de DEEP-WATT",
+ "isolants": [
+  {"nom": "Laine de verre λ32", "lambda_W_mK": 0.032, "certifie": true, "usages": ["mur", "plafond"], "prix_eur_m2_cm": 0.55},
+  {"nom": "Laine de verre λ35 (soufflée)", "lambda_W_mK": 0.035, "certifie": true, "usages": ["plafond"], "prix_eur_m2_cm": 0.35},
+  {"nom": "Laine de roche λ35", "lambda_W_mK": 0.035, "certifie": true, "usages": ["mur", "plafond"], "prix_eur_m2_cm": 0.80},
+  {"nom": "PSE graphité λ31", "lambda_W_mK": 0.031, "certifie": true, "usages": ["mur", "plancher_bas"], "prix_eur_m2_cm": 0.75},
+  {"nom": "Polyuréthane λ22", "lambda_W_mK": 0.022, "certifie": true, "usages": ["mur", "plancher_bas"], "prix_eur_m2_cm": 1.60},
+  {"nom": "Fibre de bois λ38", "lambda_W_mK": 0.038, "certifie": true, "usages": ["mur", "plafond"], "prix_eur_m2_cm": 1.90},
+  {"nom": "Ouate de cellulose λ40 (soufflée)", "lambda_W_mK": 0.040, "certifie": false, "usages": ["plafond"], "prix_eur_m2_cm": 0.40}
+ ],
+ "menuiseries": [
+  {"nom": "PVC double vitrage", "Uw": 1.30, "Sw": 0.45, "prix_eur_m2": 380},
+  {"nom": "Alu RPT double vitrage", "Uw": 1.35, "Sw": 0.42, "prix_eur_m2": 520},
+  {"nom": "PVC double vitrage performant", "Uw": 1.10, "Sw": 0.42, "prix_eur_m2": 450},
+  {"nom": "Bois/PVC triple vitrage", "Uw": 0.80, "Sw": 0.35, "prix_eur_m2": 650}
+ ],
+ "systemes": [
+  {"nom": "PAC air/eau double service", "energie": "electricite", "rendement_chauffage": 2.58, "rendement_ecs": 2.6,
+   "source_rendements": "calé sur RSET Charleville (11,2 kWhef pour 28,9 kWh de besoin)", "prix_eur": 13000},
+  {"nom": "PAC air/eau + chauffe-eau thermodynamique", "energie": "electricite", "rendement_chauffage": 2.7, "rendement_ecs": 2.4, "prix_eur": 14500},
+  {"nom": "Poêle à granulés + radiateurs électriques + CET", "energie": "bois", "part_bois": 0.7, "rendement_chauffage_bois": 0.80,
+   "rendement_chauffage": 0.95, "rendement_ecs": 2.4, "prix_eur": 11000},
+  {"nom": "Effet Joule + chauffe-eau thermodynamique", "energie": "electricite", "rendement_chauffage": 0.95, "rendement_ecs": 2.4, "prix_eur": 6500}
+ ]
+}

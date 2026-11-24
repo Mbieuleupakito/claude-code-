@@ -1,0 +1,17 @@
+{
+ "source": "Valeurs génériques (ordre de grandeur Th-U) ; certaines recalées sur les Up de catalogue_compositions.json (Pléiades)",
+ "materiaux": [
+  {"nom": "Enduit extérieur", "lambda_W_mK": 1.15, "masse_vol_kg_m3": 1800, "tag": "supposé", "source": "enduit ciment générique"},
+  {"nom": "Mortier", "lambda_W_mK": 1.15, "masse_vol_kg_m3": 1800, "tag": "supposé", "source": "mortier générique"},
+  {"nom": "Plâtre courant d’enduit intérieur", "lambda_W_mK": 0.57, "masse_vol_kg_m3": 1150, "tag": "supposé", "source": "Th-U plâtre 1000-1300"},
+  {"nom": "Plâtre gypse", "lambda_W_mK": 0.40, "masse_vol_kg_m3": 900, "tag": "supposé", "source": "plâtre générique"},
+  {"nom": "Placoplatre BA 13", "lambda_W_mK": 0.25, "masse_vol_kg_m3": 850, "tag": "supposé", "source": "plaque de plâtre générique"},
+  {"nom": "Air", "lambda_W_mK": 0.025, "tag": "supposé", "source": "air immobile (traité comme un matériau, comme Pléiades)"},
+  {"nom": "Hourdis de 16 en béton", "R_m2K_W": 0.12, "masse_vol_kg_m3": 1300, "tag": "supposé", "source": "entrevous béton 16 cm"},
+  {"nom": "Hourdis de 20 en béton", "R_m2K_W": 0.14, "masse_vol_kg_m3": 1300, "tag": "supposé", "source": "entrevous béton 20 cm"},
+  {"nom": "Parpaing de 20", "R_m2K_W": 0.20, "masse_vol_kg_m3": 1100, "tag": "déduit", "source": "recalé sur Up Pléiades « MUR SUR GARAGE » (2,326)"},
+  {"nom": "Brique Gélis 30", "R_m2K_W": 2.00, "masse_vol_kg_m3": 700, "tag": "déduit", "source": "recalé sur Up Pléiades « MUR EXTERIEUR » (0,127)"},
+  {"nom": "Béton plein", "lambda_W_mK": 2.0, "masse_vol_kg_m3": 2300, "tag": "supposé", "source": "béton armé générique"},
+  {"nom": "KNAUF THERM ITEx TH 38 SE R4F", "lambda_W_mK": 0.038, "masse_vol_kg_m3": 15, "certifie": true, "tag": "lu", "source": "désignation produit (TH 38 = λ 0,038)"}
+ ]
+}

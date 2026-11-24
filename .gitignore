@@ -9,3 +9,5 @@ data/references/*_rset.txt
 .venv/
 *.egg-info/
 build/
+data/*.sqlite
+etudes/

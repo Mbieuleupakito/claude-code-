@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+# Données clients : restent locales (CLAUDE.md, règle 5)
+*.pdf
+*.dwg
+*.plxm
+data/references/*_rset.txt

@@ -1,0 +1,91 @@
+{
+ "projet": "Charleville lot 3",
+ "source": "a753bf1e-PLANS__PROJET_LOT_3.pdf",
+ "echelle_m_par_pt": {
+  "valeur": 0.02206,
+  "tag": "déduit",
+  "source": "baies sud 113,35 pt = 2,50 m (élévation)",
+  "confiance": "moyenne"
+ },
+ "emprise_m": {
+  "largeur": 12.82,
+  "profondeur": 12.24,
+  "tag": "déduit",
+  "confiance": "moyenne"
+ },
+ "murs_facade_sud": {
+  "structure_m": 0.34,
+  "hachure_isolant_m": 0.13,
+  "epaisseur_totale_m": 0.46,
+  "position_isolant": "extérieur (hachure côté extérieur) → ITE probable",
+  "tag": "déduit",
+  "confiance": "faible à moyenne",
+  "a_verifier": "hachure fine (5,8 pt) à confirmer vs coupe/notice : épaisseur isolant et nature du mur"
+ },
+ "ouvertures_m": {
+  "sud": {
+   "RDC": [
+    2.5,
+    2.5
+   ],
+   "R+1": [
+    2.5,
+    2.5
+   ]
+  },
+  "nord": {
+   "RDC": [
+    0.6
+   ],
+   "R+1": [
+    0.6
+   ]
+  },
+  "ouest": {
+   "RDC": [
+    1.2,
+    3.6
+   ],
+   "R+1": [
+    1.2,
+    0.6,
+    3.6
+   ]
+  },
+  "est": {
+   "RDC": [
+    1.2,
+    2.2,
+    1.2
+   ],
+   "R+1": [
+    1.2,
+    1.2,
+    1.2
+   ]
+  }
+ },
+ "ouvertures_tag": "déduit (trous dans le mur) ; ouest RDC 3,6 m = baie large ou mur non détecté → à vérifier",
+ "hauteur_sous_plafond": {
+  "valeur_m": 2.4,
+  "tag": "déduit",
+  "source": "élévations : NGF 161,00 → 165,79 (4,79 m sur 2 niveaux) ; hauteur totale 7,26 m (faîtage 168,26)",
+  "confiance": "faible",
+  "a_verifier": "hauteur d'étage vs HSP : lire la coupe"
+ },
+ "ponts_thermiques_ml_par_niveau": {
+  "plancher_bas_mur": 50.1,
+  "plancher_interm_mur": 50.1,
+  "toiture_mur": 50.1,
+  "angles_sortants_ml": 10.0,
+  "tag": "déduit (périmètre emprise)"
+ },
+ "manquants": [
+  "hauteurs étage (coupe)",
+  "composition exacte murs/plancher/toiture",
+  "menuiseries Uw/Sw",
+  "système chauffage/ECS",
+  "type de mur (maçonnerie ?) – légende plan"
+ ],
+ "controle_visuel": "overlay_RDC.png : murs, hachure isolant extérieure et ouvertures cohérents avec le plan ; cloisons incomplètes"
+}

@@ -1,0 +1,35 @@
+{
+ "echelle_m_par_pt": 0.03528,
+ "emprise_bloc_m": [
+  7.2,
+  8.25
+ ],
+ "perimetre_m": 30.9,
+ "hauteur_hyp": 2.75,
+ "murs_bruts_m2": 170.0,
+ "murs_nets_m2": 150.0,
+ "toit_m2": 59.4,
+ "pb_m2": 59.4,
+ "baies_par_orient": {
+  "Est": 6.4,
+  "Sud": 3.01,
+  "Ouest": 10.74
+ },
+ "baies_total": 20.15,
+ "perimetre_baies_m": 55.7,
+ "nord_lecture": "flèche vers haut-gauche : haut de page = Est, droite = Sud, bas = Ouest, gauche = Nord",
+ "scenario_menuiserie_avec_retour": {
+  "PT_W_K": 33.5,
+  "ratio_psi": 0.33,
+  "dep_W_K": 150.0,
+  "besoin_ch": 33.9,
+  "bbio": 83.0
+ },
+ "scenario_sans_retour": {
+  "PT_W_K": 59.6,
+  "ratio_psi": 0.6,
+  "dep_W_K": 176.0,
+  "besoin_ch": 39.8,
+  "bbio": 95.0
+ }
+}

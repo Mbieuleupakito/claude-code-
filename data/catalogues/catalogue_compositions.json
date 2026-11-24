@@ -1,0 +1,168 @@
+[
+ {
+  "nom": "PLANCHER INTERMEDIAIRE",
+  "categorie": "Constructiondunemaisondhabitation",
+  "couches": [
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Hourdis de 20 en béton",
+    "epaisseur_cm": 20.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Polyuréthane TMS 0.020",
+    "epaisseur_cm": 15.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Mortier",
+    "epaisseur_cm": 5.0
+   }
+  ],
+  "UpIndic_pleiades": 0.128,
+  "epaisseur_totale_cm": 40.0
+ },
+ {
+  "nom": "CLOISON LEGERE",
+  "categorie": "MAISON INDIV",
+  "couches": [
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Placoplatre BA 13",
+    "epaisseur_cm": 1.3
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Air",
+    "epaisseur_cm": 4.8
+   },
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Placoplatre BA 13",
+    "epaisseur_cm": 1.3
+   }
+  ],
+  "UpIndic_pleiades": 0.461,
+  "epaisseur_totale_cm": 7.4
+ },
+ {
+  "nom": "MUR EXTERIEUR",
+  "categorie": "MAISON INDIV",
+  "couches": [
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Enduit extérieur",
+    "epaisseur_cm": 2.0
+   },
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Brique Gélis 30",
+    "epaisseur_cm": 30.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "GR 32 roule revetu kraft 100*1200*2700 Metex",
+    "epaisseur_cm": 18.0
+   },
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Placoplatre BA 13",
+    "epaisseur_cm": 1.3
+   }
+  ],
+  "UpIndic_pleiades": 0.127,
+  "epaisseur_totale_cm": 51.3
+ },
+ {
+  "nom": "MUR EXTERIEUR  GARAGE SOUS COMBLE",
+  "categorie": "MAISON INDIV",
+  "couches": [
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Enduit extérieur",
+    "epaisseur_cm": 2.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "GR 32 roule revetu kraft 100*1200*2700 Metex",
+    "epaisseur_cm": 20.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Plâtre courant d’enduit intérieur ( 1000 ≤ ρ ≤ 1300)",
+    "epaisseur_cm": 2.0
+   }
+  ],
+  "UpIndic_pleiades": 0.154,
+  "epaisseur_totale_cm": 24.0
+ },
+ {
+  "nom": "MUR SUR GARAGE",
+  "categorie": "MAISON INDIV",
+  "couches": [
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Enduit extérieur",
+    "epaisseur_cm": 3.0
+   },
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Parpaing de 20",
+    "epaisseur_cm": 20.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Plâtre courant d’enduit intérieur ( 1000 ≤ ρ ≤ 1300)",
+    "epaisseur_cm": 2.0
+   }
+  ],
+  "UpIndic_pleiades": 2.326,
+  "epaisseur_totale_cm": 25.0
+ },
+ {
+  "nom": "PLAFOND sous comble perdu",
+  "categorie": "MAISON INDIV",
+  "couches": [
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Laine de verre 30",
+    "epaisseur_cm": 30.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Plâtre gypse",
+    "epaisseur_cm": 1.0
+   }
+  ],
+  "UpIndic_pleiades": 0.098,
+  "epaisseur_totale_cm": 31.0
+ },
+ {
+  "nom": "PLANCHER BAS",
+  "categorie": "MAISON INDIV",
+  "couches": [
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "Hourdis de 16 en béton",
+    "epaisseur_cm": 16.0
+   },
+   {
+    "source": "Edibatec/biblio",
+    "materiau": "KNAUF THERM ITEx TH 38 SE R4F - 140",
+    "epaisseur_cm": 14.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Polyuréthane TMS 0.020",
+    "epaisseur_cm": 12.0
+   },
+   {
+    "source": "matériau perso/Metex",
+    "materiau": "Mortier",
+    "epaisseur_cm": 5.0
+   }
+  ],
+  "UpIndic_pleiades": 0.097,
+  "epaisseur_totale_cm": 47.0
+ }
+]

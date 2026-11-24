@@ -1,0 +1,1028 @@
+{
+ "source": "plan_ankha_M01.pdf",
+ "page": 0,
+ "echelle": {
+  "denominateur": {
+   "valeur": 100,
+   "tag": "lu",
+   "source": "mention « Ech 1:100 » (3 occurrence(s))",
+   "confiance": "haute"
+  },
+  "m_par_pt": 0.035278
+ },
+ "nord": {
+  "valeur": -57.1,
+  "unite": "°",
+  "tag": "déduit",
+  "source": "symbole du nord (2 trouvé(s))",
+  "confiance": "haute",
+  "explication": "angle du nord par rapport au haut de la feuille, positif vers la droite (négatif = vers la gauche)",
+  "_symboles_pt": [
+   [
+    475.9,
+    789.9
+   ],
+   [
+    961.0,
+    658.4
+   ]
+  ]
+ },
+ "niveaux": [
+  {
+   "niveau": {
+    "valeur": "RDC",
+    "tag": "lu",
+    "source": "titre de vue « R+0 M01 projet »",
+    "confiance": "moyenne"
+   },
+   "emprise_m": {
+    "largeur": {
+     "valeur": 7.2,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "murs pleins (face ext. de la couche pleine)",
+     "confiance": "haute"
+    },
+    "profondeur": {
+     "valeur": 8.25,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "murs pleins (face ext. de la couche pleine)",
+     "confiance": "haute"
+    }
+   },
+   "murs_exterieurs": {
+    "couche_pleine_m": {
+     "valeur": 0.199,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "aplat du mur",
+     "confiance": "moyenne",
+     "a_verifier": "structure probable : nature (béton, brique, ossature) à lire sur la notice/coupe"
+    },
+    "bande_hachuree_ext_m": {
+     "valeur": 0.199,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "hachures côté extérieur",
+     "confiance": "moyenne"
+    },
+    "bande_hachuree_int_m": {
+     "valeur": 0.072,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "hachures côté intérieur",
+     "confiance": "moyenne"
+    },
+    "isolation": {
+     "valeur": "ITE + doublage intérieur probables",
+     "tag": "déduit",
+     "source": "position des bandes hachurées",
+     "confiance": "moyenne",
+     "a_verifier": "épaisseur et nature de l'isolant à confirmer (coupe, notice, CCTP)"
+    }
+   },
+   "dimensions_interieures_m": {
+    "largeur": {
+     "valeur": 6.66,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "emprise - murs - bande intérieure",
+     "confiance": "moyenne"
+    },
+    "profondeur": {
+     "valeur": 7.71,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "emprise - murs - bande intérieure",
+     "confiance": "moyenne"
+    }
+   },
+   "surface_interieure_m2": {
+    "valeur": 51.3,
+    "unite": "m²",
+    "tag": "déduit",
+    "source": "dimensions intérieures (cloisons et trémie comprises)",
+    "confiance": "moyenne"
+   },
+   "surface_pieces_etiquetees_m2": {
+    "valeur": 47.5,
+    "unite": "m²",
+    "tag": "lu",
+    "source": "somme de 4 étiquettes de pièces",
+    "confiance": "haute"
+   },
+   "pieces": [
+    {
+     "nom": "Buanderie",
+     "surface_m2": 4.1
+    },
+    {
+     "nom": "SDB",
+     "surface_m2": 5.7
+    },
+    {
+     "nom": "Cellier",
+     "surface_m2": 2.7
+    },
+    {
+     "nom": "Salon Cuisine",
+     "surface_m2": 35.0
+    }
+   ],
+   "facades": {
+    "haut": {
+     "longueur_interieure_m": {
+      "valeur": 6.66,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 57.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "NE",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    },
+    "droite": {
+     "longueur_interieure_m": {
+      "valeur": 7.71,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 147.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "SE",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    },
+    "bas": {
+     "longueur_interieure_m": {
+      "valeur": 6.66,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 237.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "SO",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    },
+    "gauche": {
+     "longueur_interieure_m": {
+      "valeur": 7.71,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 327.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "NO",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    }
+   },
+   "baies": [
+    {
+     "nom": "Mext18",
+     "facade": "haut",
+     "orientation": "NE",
+     "largeur_m": {
+      "valeur": 0.6,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 0.6,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 1.5,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 0.6,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      251.4,
+      268.4
+     ],
+     "_etiquette_pt": [
+      259.8,
+      282.9
+     ]
+    },
+    {
+     "nom": "Mext19",
+     "facade": "haut",
+     "orientation": "NE",
+     "largeur_m": {
+      "valeur": 0.6,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 0.6,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 1.5,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 0.6,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      373.8,
+      390.8
+     ],
+     "_etiquette_pt": [
+      382.2,
+      280.6
+     ]
+    },
+    {
+     "nom": "Pext04",
+     "facade": "haut",
+     "orientation": "NE",
+     "largeur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 2.2,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 2.2,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "mention": "PV",
+     "largeur_mesuree_plan_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      296.9,
+      325.2
+     ],
+     "_etiquette_pt": [
+      310.9,
+      289.7
+     ]
+    },
+    {
+     "nom": "Mext20",
+     "facade": "droite",
+     "orientation": "SE",
+     "largeur_m": {
+      "valeur": 1.4,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 2.15,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 3.01,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 0.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 1.4,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      396.2,
+      435.8
+     ],
+     "_etiquette_pt": [
+      437.6,
+      416.0
+     ]
+    },
+    {
+     "nom": "Mext21",
+     "facade": "bas",
+     "orientation": "SO",
+     "largeur_m": {
+      "valeur": 2.7,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 2.15,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 5.8,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 0.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 2.7,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      317.4,
+      394.0
+     ],
+     "_etiquette_pt": [
+      355.6,
+      551.1
+     ]
+    },
+    {
+     "nom": "Mext22",
+     "facade": "bas",
+     "orientation": "SO",
+     "largeur_m": {
+      "valeur": 0.9,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 2.15,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 1.94,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 0.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 0.9,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      247.7,
+      273.1
+     ],
+     "_etiquette_pt": [
+      260.4,
+      551.1
+     ]
+    }
+   ],
+   "_bbox_pt": [
+    218.2,
+    301.0,
+    422.3,
+    534.8
+   ]
+  },
+  {
+   "niveau": {
+    "valeur": "R+1",
+    "tag": "lu",
+    "source": "titre de vue « R+1 M01 projet »",
+    "confiance": "haute"
+   },
+   "emprise_m": {
+    "largeur": {
+     "valeur": 7.2,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "murs pleins (face ext. de la couche pleine)",
+     "confiance": "haute"
+    },
+    "profondeur": {
+     "valeur": 8.25,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "murs pleins (face ext. de la couche pleine)",
+     "confiance": "haute"
+    }
+   },
+   "murs_exterieurs": {
+    "couche_pleine_m": {
+     "valeur": 0.199,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "aplat du mur",
+     "confiance": "moyenne",
+     "a_verifier": "structure probable : nature (béton, brique, ossature) à lire sur la notice/coupe"
+    },
+    "bande_hachuree_ext_m": {
+     "valeur": 0.199,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "hachures côté extérieur",
+     "confiance": "moyenne"
+    },
+    "bande_hachuree_int_m": {
+     "valeur": 0.072,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "hachures côté intérieur",
+     "confiance": "moyenne"
+    },
+    "isolation": {
+     "valeur": "ITE + doublage intérieur probables",
+     "tag": "déduit",
+     "source": "position des bandes hachurées",
+     "confiance": "moyenne",
+     "a_verifier": "épaisseur et nature de l'isolant à confirmer (coupe, notice, CCTP)"
+    }
+   },
+   "dimensions_interieures_m": {
+    "largeur": {
+     "valeur": 6.66,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "emprise - murs - bande intérieure",
+     "confiance": "moyenne"
+    },
+    "profondeur": {
+     "valeur": 7.71,
+     "unite": "m",
+     "tag": "déduit",
+     "source": "emprise - murs - bande intérieure",
+     "confiance": "moyenne"
+    }
+   },
+   "surface_interieure_m2": {
+    "valeur": 51.3,
+    "unite": "m²",
+    "tag": "déduit",
+    "source": "dimensions intérieures (cloisons et trémie comprises)",
+    "confiance": "moyenne"
+   },
+   "surface_pieces_etiquetees_m2": {
+    "valeur": 42.8,
+    "unite": "m²",
+    "tag": "lu",
+    "source": "somme de 5 étiquettes de pièces",
+    "confiance": "haute"
+   },
+   "pieces": [
+    {
+     "nom": "SdB",
+     "surface_m2": 6.8
+    },
+    {
+     "nom": "Ch 1",
+     "surface_m2": 11.7
+    },
+    {
+     "nom": "circul",
+     "surface_m2": 2.6
+    },
+    {
+     "nom": "Ch4",
+     "surface_m2": 11.4
+    },
+    {
+     "nom": "Ch 3",
+     "surface_m2": 10.3
+    }
+   ],
+   "facades": {
+    "haut": {
+     "longueur_interieure_m": {
+      "valeur": 6.66,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 57.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "NE",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    },
+    "droite": {
+     "longueur_interieure_m": {
+      "valeur": 7.71,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 147.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "SE",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    },
+    "bas": {
+     "longueur_interieure_m": {
+      "valeur": 6.66,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 237.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "SO",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    },
+    "gauche": {
+     "longueur_interieure_m": {
+      "valeur": 7.71,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "emprise des murs pleins - épaisseurs",
+      "confiance": "moyenne"
+     },
+     "azimut_deg": {
+      "valeur": 327.1,
+      "unite": "°",
+      "tag": "déduit",
+      "source": "normale extérieure + nord",
+      "confiance": "haute"
+     },
+     "orientation": {
+      "valeur": "NO",
+      "tag": "déduit",
+      "source": "secteur de 45°",
+      "confiance": "haute"
+     }
+    }
+   },
+   "baies": [
+    {
+     "nom": "Mext24",
+     "facade": "haut",
+     "orientation": "NE",
+     "largeur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 1.5,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 1.5,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      804.6,
+      833.0
+     ],
+     "_etiquette_pt": [
+      820.6,
+      280.7
+     ]
+    },
+    {
+     "nom": "Mext25",
+     "facade": "haut",
+     "orientation": "NE",
+     "largeur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 1.5,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 1.5,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      878.4,
+      906.7
+     ],
+     "_etiquette_pt": [
+      894.3,
+      280.7
+     ]
+    },
+    {
+     "nom": "Mext26",
+     "facade": "bas",
+     "orientation": "SO",
+     "largeur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 1.5,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 1.5,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      873.8,
+      902.2
+     ],
+     "_etiquette_pt": [
+      889.7,
+      553.1
+     ]
+    },
+    {
+     "nom": "Mext27",
+     "facade": "bas",
+     "orientation": "SO",
+     "largeur_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "hauteur_m": {
+      "valeur": 1.5,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette (cm)",
+      "confiance": "haute"
+     },
+     "surface_m2": {
+      "valeur": 1.5,
+      "unite": "m²",
+      "tag": "déduit",
+      "source": "L x H de l'étiquette",
+      "confiance": "haute"
+     },
+     "allege_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "lu",
+      "source": "étiquette « all. »",
+      "confiance": "haute"
+     },
+     "largeur_mesuree_plan_m": {
+      "valeur": 1.0,
+      "unite": "m",
+      "tag": "déduit",
+      "source": "interruption de la bande isolant",
+      "confiance": "moyenne"
+     },
+     "_ouverture_pt": [
+      809.2,
+      837.5
+     ],
+     "_etiquette_pt": [
+      825.2,
+      553.1
+     ]
+    }
+   ],
+   "_bbox_pt": [
+    753.6,
+    301.0,
+    957.7,
+    534.8
+   ]
+  }
+ ],
+ "batiment": {
+  "nombre_niveaux": {
+   "valeur": 2,
+   "tag": "déduit",
+   "source": "blocs de murs détectés",
+   "confiance": "haute"
+  },
+  "hauteur_sous_plafond_m": {
+   "valeur": 2.5,
+   "unite": "m",
+   "tag": "supposé",
+   "source": "valeur par défaut (non lisible sur un plan) → lire la coupe",
+   "confiance": "faible"
+  },
+  "surface_interieure_totale_m2": {
+   "valeur": 102.6,
+   "unite": "m²",
+   "tag": "déduit",
+   "source": "Σ surfaces intérieures des niveaux",
+   "confiance": "moyenne",
+   "note": "proche de la Sref/SHAB ; retirer trémie d'escalier et parties < 1,80 m si besoin"
+  },
+  "surface_pieces_etiquetees_totale_m2": {
+   "valeur": 90.3,
+   "unite": "m²",
+   "tag": "lu",
+   "source": "Σ étiquettes de pièces",
+   "confiance": "haute",
+   "note": "hors circulations ou pièces non étiquetées"
+  },
+  "baies_par_orientation_m2": {
+   "NE": 6.4,
+   "SE": 3.01,
+   "SO": 10.74
+  },
+  "baies_total_m2": 20.15,
+  "murs_par_orientation_m2": {
+   "NE": {
+    "brut_m2": 33.3,
+    "net_m2": 26.9
+   },
+   "SE": {
+    "brut_m2": 38.5,
+    "net_m2": 35.5
+   },
+   "SO": {
+    "brut_m2": 33.3,
+    "net_m2": 22.6
+   },
+   "NO": {
+    "brut_m2": 38.5,
+    "net_m2": 38.5
+   }
+  },
+  "ponts_thermiques": {
+   "plancher_bas_mur_ml": {
+    "valeur": 28.7,
+    "unite": "m",
+    "tag": "déduit",
+    "source": "périmètre intérieur du niveau le plus bas",
+    "confiance": "moyenne"
+   },
+   "plancher_intermediaire_mur_ml": {
+    "valeur": 28.7,
+    "unite": "m",
+    "tag": "déduit",
+    "source": "périmètres intérieurs des niveaux supérieurs",
+    "confiance": "moyenne"
+   },
+   "toiture_mur_ml": {
+    "valeur": 28.7,
+    "unite": "m",
+    "tag": "supposé",
+    "source": "périmètre du dernier niveau (toiture au-dessus supposée)",
+    "confiance": "faible"
+   },
+   "angles_sortants_ml": {
+    "valeur": 20.0,
+    "unite": "m",
+    "tag": "déduit",
+    "source": "4 angles x HSP x niveaux (plan rectangulaire)",
+    "confiance": "moyenne"
+   },
+   "menuiseries_appuis_ml": {
+    "valeur": 11.2,
+    "unite": "m",
+    "tag": "déduit",
+    "source": "Σ largeurs des baies",
+    "confiance": "haute"
+   },
+   "menuiseries_linteaux_ml": {
+    "valeur": 11.2,
+    "unite": "m",
+    "tag": "déduit",
+    "source": "Σ largeurs des baies",
+    "confiance": "haute"
+   },
+   "menuiseries_tableaux_ml": {
+    "valeur": 33.3,
+    "unite": "m",
+    "tag": "déduit",
+    "source": "Σ 2 x hauteurs des baies",
+    "confiance": "haute"
+   }
+  }
+ },
+ "alertes": [],
+ "manquants": [
+  "hauteurs d'étage et HSP (coupe)",
+  "compositions exactes murs / plancher bas / toiture (notice, CCTP)",
+  "menuiseries : Uw, Sw, TLw, occultations",
+  "type de toiture (combles perdus / rampants / terrasse)",
+  "refends et planchers intermédiaires : nature (ponts thermiques)",
+  "systèmes chauffage / ECS / ventilation"
+ ]
+}

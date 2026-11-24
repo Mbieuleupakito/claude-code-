@@ -20,8 +20,12 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 
 ## Architecture visée
 - `src/re2020/seuils.py` : seuils et modulations (fait, avec test).
-- `src/re2020/plans/` : extraction PDF vectoriel (pdfplumber) → JSON normalisé (échelle, emprise, murs, baies par
-  orientation, ITE/ITI, hauteurs, ml de ponts thermiques). Prototype : `scripts_prototypes/extract.py`, `data/examples/`.
+- `src/re2020/trace.py` : `val(valeur, tag, source, confiance)` — format commun des valeurs tracées.
+- `src/re2020/plans/` : extraction PDF vectoriel (pdfplumber) → JSON normalisé (fait, testé sur Domène M01) :
+  échelle lue, niveaux, emprise, couche pleine + bandes hachurées (ITE/ITI), baies (étiquettes + trous dans
+  l'isolant, texte vertical compris), symbole du nord → azimut/orientation, pièces, ml de ponts thermiques,
+  image de contrôle. CLI : `python -m src.re2020.plans plan.pdf --controle plan.png`.
+  Limites : murs en aplats rectangulaires, plan orthogonal et rectangulaire (sinon alerte), HSP non lue.
 - `src/re2020/catalogues/` : compositions Pléiades, matériaux, Ψ Th-Bât, fiches ACV (INIES) — `data/catalogues/`.
 - `src/re2020/estimation/` : déperditions, besoins, Bbio/Cep simplifiés avec fourchette ; calibrage sur les cas de `data/references/`.
 - `src/re2020/acv/` : quantités par lot (13 lots), fiche par défaut → fiche spécifique recommandée, estimation Ic construction.
@@ -30,7 +34,8 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 
 ## Feuille de route de développement
 1. Valider `seuils.py` (test OK). Compléter avec MbHSP/McHSP/MiHSP quand le texte du décret 2026-200 est disponible.
-2. Industrialiser l'extraction de plans (Charleville, Domène M01) ; sortie JSON avec traçabilité ; lecture du symbole du nord.
+2. Extraction de plans : fait pour Domène M01 (style ANKHA). Reste : Charleville (murs en hachures, pas d'aplat),
+   plans non rectangulaires, lecture des coupes (HSP, hauteurs d'étage), DXF.
 3. Moteur d'estimation simplifié : calibrer sur Charleville puis Domène/Boumnich/Les Ulis ; objectif ± 5 points de Bbio.
 4. Générateur de propositions : combinaisons isolant/épaisseur/système vérifiant les seuils, avec coût (catalogue produits).
 5. ACV : catalogue élément → fiche (modèle Boumnich) et estimation d'Ic construction par lot.

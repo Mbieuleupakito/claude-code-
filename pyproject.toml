@@ -5,7 +5,7 @@ requires-python = ">=3.10"
 dependencies = ["pdfplumber"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "reportlab"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

@@ -6,3 +6,6 @@ __pycache__/
 *.dwg
 *.plxm
 data/references/*_rset.txt
+.venv/
+*.egg-info/
+build/

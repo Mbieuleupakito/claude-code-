@@ -1,12 +1,26 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "re2020-assistant"
-version = "0.1.0"
-requires-python = ">=3.10"
-dependencies = ["pdfplumber"]
+version = "0.2.0"
+description = "Assistant d'étude RE2020 (énergie + ACV) pour préparer la saisie Pléiades — DEEP-WATT"
+requires-python = ">=3.12"
+dependencies = [
+    "pdfplumber>=0.11",
+    "ezdxf>=1.3",
+    "shapely>=2.0",
+]
 
 [project.optional-dependencies]
-dev = ["pytest", "reportlab"]
+api = ["fastapi", "uvicorn", "python-multipart"]
+rapport = ["weasyprint"]
+dev = ["pytest", "reportlab", "pyflakes"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
 testpaths = ["tests"]

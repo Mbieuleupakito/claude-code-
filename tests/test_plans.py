@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from src.re2020.plans import extraire_plan
-from src.re2020.plans import nord
-from src.re2020.plans.textes import RE_DIMS, RE_ECHELLE, m_par_pt, normaliser_niveau
+from re2020.plans import extraire_plan
+from re2020.plans import nord
+from re2020.plans.textes import RE_DIMS, RE_ECHELLE, m_par_pt, normaliser_niveau
 
 from .plan_synthetique import generer
 

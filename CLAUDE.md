@@ -19,7 +19,8 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 6. Pas de lecture de DWG : demander un PDF vectoriel ou un DXF.
 
 ## Architecture visée
-- `src/re2020/seuils.py` : seuils et modulations (fait, avec test).
+- `src/re2020/seuils.py` : seuils et modulations (fait, testé) ; date de PC → HSP applicable ou non ;
+  `hsp_implicites` retrouve MbHSP/McHSP depuis un seuil Pléiades. Paquet `re2020` en layout `src/`, Python 3.12, `.venv`.
 - `src/re2020/trace.py` : `val(valeur, tag, source, confiance)` — format commun des valeurs tracées.
 - `src/re2020/plans/` : extraction PDF vectoriel (pdfplumber) → JSON normalisé (fait, testé sur Domène M01) :
   échelle lue, niveaux, emprise, couche pleine + bandes hachurées (ITE/ITI), baies (étiquettes + trous dans

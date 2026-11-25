@@ -18,8 +18,9 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 5. Confidentialité : les plans et données clients restent locaux ; ne pas les envoyer vers des services tiers.
    Seule exception, demandée par l'utilisateur : commune + code postal vers les services publics (BAN, IGN) pour
    l'altitude ; jamais l'adresse complète ni les documents. RE2020_HORS_LIGNE=1 coupe tout appel.
-6. Formats : PDF vectoriel et DXF lus directement ; DWG seulement converti SUR LE POSTE (ODA File Converter ou
-   LibreDWG installés), jamais par un service en ligne ; Word/Excel/texte lus comme une notice ; images non lues
+6. Formats : PDF vectoriel et DXF lus directement ; DWG seulement converti SUR LE POSTE (ODA File Converter, trouvé
+   même dans son dossier versionné, sinon LibreDWG 0.14 que le lanceur installe une fois sous Windows dans `outils/`
+   — `outils_dwg.py`, SHA256 vérifié ; seul l'outil est téléchargé), jamais par un service en ligne ; Word/Excel/texte lus comme une notice ; images non lues
    (signalées). Le DXF est redessiné en PDF vectoriel à 1:100 (`formats.py`) ; murs en traits reconnus par calque.
 
 ## Architecture visée
@@ -41,7 +42,11 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   Tests : plans synthétiques (rectangle ITE, L en ITI, dossier « peint » + notice) + Domène M01 + mini-projet bureaux
   (`data/examples/mini_projet/`, 18 contrôles croisés concordants) + Charleville (PDF client gitignoré : 2 niveaux,
   1:63 retrouvé alors que 1:250 est écrit, plancher bas 130,6 m² vs 126,7 RSET, baie O double hauteur).
-  Limites : pas de nord sur les plans Charleville (à saisir) ; hauteurs des baies non étiquetées supposées → baies
+  Élévations / coupes reconnues (nom du fichier, titre, faîtage + égout) et jamais lues comme plans de niveau ; coupe
+  DXF/DWG : HSP = cote verticale la plus fréquente 2,2-3,2 m, hauteur d'étage = HSP + plancher (Charleville 2,50 / 2,75).
+  RSET déposé : parois (Up + surfaces, porte avec les murs), vitrages Uw/Sw, baies par orientation, systèmes, seuils
+  Pléiades, Bbio/Cep « Pléiades » comparés ; nord déduit des baies par orientation (`etude.nord_par_baies`).
+  Limites : pas de nord sur les plans Charleville (à saisir, ou déduit si RSET) ; hauteurs des baies non étiquetées supposées → baies
   +23 % (test xfail) : prochaine étape = lire les élévations (échelle fausse aussi, vantaux un par un) ; HSP non lue.
 - `src/re2020/documents/` (fait) : lecture de TOUT le dossier PDF (notice, tableaux, coupe…) : tableaux reconnus par
   leurs en-têtes (infos projet, parois Up, menuiseries Uw/g/TL, Ψ·L, baies + allèges, locaux, bilan façades, Sref),

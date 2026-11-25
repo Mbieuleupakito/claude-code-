@@ -11,3 +11,6 @@ data/references/*_rset.txt
 build/
 data/*.sqlite
 etudes/
+
+# convertisseurs installés sur le poste (LibreDWG)
+outils/

@@ -40,6 +40,24 @@ MANQUANTS = ["hauteurs d'étage et HSP (coupe)", "compositions murs / plancher b
 DISTANCE_ETIQUETTE_M = 3.0  # distance max étiquette ↔ ouverture
 
 
+RE_ELEVATION = re.compile(r"[ée]l[ée]vation|\bfa[çc]ades?\b|\bcoupes?\b", re.I)
+RE_PLAN_NIVEAU = re.compile(r"\bplans?\s+(?:du\s+|de\s+)?(?:rdc|r\s?\+|rez|niveau|[ée]tage|combles?|sous[- ]sol)|\bplans?[ _-]+projet", re.I)
+
+
+def vue_non_plan(nom: str, texte: str) -> str | None:
+    """« élévation » ou « coupe » si la page n'est pas un plan de niveau (nom du fichier, titre, Faîtage / Égout)."""
+    n = nom.replace("_", " ")
+    if RE_PLAN_NIVEAU.search(n) or RE_PLAN_NIVEAU.search(texte):
+        return None
+    if re.search(r"\bcoupes?\b", n, re.I):
+        return "coupe"
+    if RE_ELEVATION.search(n):
+        return "élévation"
+    if re.search(r"\bfa[îi]tage\b", texte, re.I) and re.search(r"\b[ée]gout\b", texte, re.I):
+        return "élévation ou coupe (faîtage / égout)"
+    return None
+
+
 def extraire_plan(chemin, page: int | None = None, hsp_m: float | None = None, denominateur: int | None = None,
                   angle_nord_deg: float | None = None) -> dict:
     """Lit un ou plusieurs PDF vectoriels et retourne le JSON normalisé (valeurs tracées lu / déduit / supposé).
@@ -55,7 +73,11 @@ def extraire_plan(chemin, page: int | None = None, hsp_m: float | None = None, d
             pages = [page] if page is not None else range(len(pdf.pages))
             for i in pages:
                 p = pdf.pages[i]
-                textes.append(p.extract_text() or "")
+                txt = p.extract_text() or ""
+                textes.append(txt)
+                if page is None and (vue := vue_non_plan(ch.name, txt)):
+                    echecs.append(f"{ch.name} p.{i + 1} : {vue} (pas un plan de niveau)")
+                    continue
                 try:
                     r = _Extraction(p, denominateur, angle_nord_deg).run(ch.name, i)
                 except ValueError as exc:
@@ -66,6 +88,9 @@ def extraire_plan(chemin, page: int | None = None, hsp_m: float | None = None, d
                 r["_fichier"] = ic
                 resultats.append(r)
     resultats = _echelle_par_fichier(resultats, chemins, angle_nord_deg) if denominateur is None else resultats
+    if not resultats and echecs and all("pas un plan de niveau" in x for x in echecs):
+        raise ValueError("Aucun plan de niveau dans le dossier (seulement des élévations / coupes : "
+                         + " ; ".join(echecs) + "). Ajouter le PDF des PLANS (RDC, R+1…).")
     if not resultats:
         raise ValueError(echecs[0] if len(echecs) == 1 else
                          "Aucun plan de niveau reconnu dans le dossier (murs non remplis ?). Demander un PDF avec murs "

@@ -43,9 +43,22 @@ def _composants() -> None:
         print("  L'installation des composants a échoué : envoyer une capture de cette fenêtre.")
 
 
+def _lecteur_dwg() -> None:
+    """Sous Windows : installe une fois LibreDWG (lecture des DWG sur le poste) si ODA File Converter n'est pas là."""
+    try:
+        from re2020.formats import trouver_oda
+        from re2020.outils_dwg import chemin_dwg2dxf, installer
+
+        if not trouver_oda() and not chemin_dwg2dxf():
+            installer()
+    except Exception as exc:  # jamais bloquant
+        print(f"  Lecteur de DWG non installé ({exc}).")
+
+
 def main() -> int:
     _git_pull()
     _composants()
+    _lecteur_dwg()
     return subprocess.call([sys.executable, "-m", "re2020.api", *sys.argv[1:]])
 
 

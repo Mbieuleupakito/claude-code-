@@ -52,6 +52,7 @@ def realiser_etude(fichiers, p: Parametres, catalogue: Catalogue | None = None,
                          + (" — " + " ; ".join(non_lus) if non_lus else ""))
     plan = extraire_plan(prep["plans"], hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=p.angle_nord_deg)
     dossier = lire_dossier(prep["documents"])
+    _hauteurs_des_coupes(plan, prep, p)
     if p.angle_nord_deg is None and plan["nord"]["valeur"] is None and dossier.get("baies_orientation"):
         nord = nord_par_baies(plan, dossier["baies_orientation"])
         if nord is not None:  # plan relu avec ce nord : façades et baies orientées
@@ -178,6 +179,27 @@ def controles_croises(plan: dict, dossier: dict) -> list[dict]:
             n_plan = sum(1 for n in plan["niveaux"] for b in n["baies"] if meme_repere(b["nom"], m["repere"]))
             out.append(_ligne(f"Nombre de {m['designation'].split(' ')[0].lower()}s ({m['repere']})", n_plan, m["quantite"]["valeur"], tol=0))
     return out
+
+
+def _hauteurs_des_coupes(plan: dict, prep: dict, p: Parametres) -> None:
+    """HSP et hauteur d'étage lues sur les cotes d'une coupe DXF/DWG, si le plan ne les donne pas."""
+    from .formats import hauteurs_coupe
+    from .plans.extraction import batiment
+    from .trace import val as _val
+
+    if p.hsp_m is not None or plan["batiment"]["hauteur_sous_plafond_m"]["tag"] != "supposé":
+        return
+    coupes = [(n, c) for n, c in prep.get("cotes_verticales", []) if re.search(r"coupe", n, re.I)] or prep.get("cotes_verticales", [])
+    for nom, cotes in coupes:
+        h = hauteurs_coupe(cotes)
+        if not h:
+            continue
+        hsp = _val(h["hsp_m"], "lu", f"cote verticale la plus fréquente de « {nom} » ({len(cotes)} cotes)", "haute", "m")
+        het = _val(h["hauteur_etage_m"], "déduit", f"HSP + plancher {h['plancher_m']:g} m coté sur « {nom} »", "haute", "m") \
+            if h.get("hauteur_etage_m") else None
+        plan["batiment"] = batiment(plan["niveaux"], hsp, het)
+        plan["manquants"] = [m for m in plan.get("manquants", []) if not m.startswith("hauteurs")]
+        return
 
 
 def nord_par_baies(plan: dict, baies_orientation: dict) -> dict | None:

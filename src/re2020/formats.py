@@ -3,8 +3,8 @@
 - DXF : redessiné en PDF vectoriel à une échelle exacte (1:100), avec les vrais textes, pour réutiliser toute la
   lecture de plans. Les calques servent à reconnaître les murs dessinés en simples traits (« MURS », « A-WALL »…) :
   leurs contours fermés deviennent des aplats. Les hachures (isolant) sont dessinées ligne par ligne.
-- DWG : format fermé, converti en DXF SUR LE POSTE par ODA File Converter (gratuit) ou LibreDWG (dwg2dxf) s'ils
-  sont installés ; aucun fichier n'est envoyé à l'extérieur.
+- DWG : format fermé, converti en DXF SUR LE POSTE par ODA File Converter (gratuit) s'il est installé, sinon par
+  LibreDWG (dwg2dxf), que le lanceur installe automatiquement sous Windows (outils_dwg.py) ; aucun fichier n'est envoyé.
 - Word (.docx), LibreOffice (.odt, .ods, dont les rapports Pléiades), Excel (.xlsx), texte (.txt, .csv) : lus par documents.lecture comme une notice.
 - Images : conservées mais non lues (pas de géométrie exploitable dans un scan).
 """
@@ -63,9 +63,16 @@ def dwg_vers_dxf(dwg: Path, dossier_sortie: Path) -> Path:
     if odafc.is_installed():
         odafc.convert(str(dwg), str(sortie), version="R2018", replace=True)
         return sortie
-    if shutil.which("dwg2dxf"):
-        subprocess.run(["dwg2dxf", "-y", "-o", str(sortie), str(dwg)], check=True, capture_output=True, timeout=300)
-        return sortie
+    from .outils_dwg import chemin_dwg2dxf
+
+    exe = chemin_dwg2dxf() or shutil.which("dwg2dxf")
+    if exe:  # LibreDWG (installé par le lanceur sous Windows) : conversion locale
+        r = subprocess.run([str(exe), "-y", "-o", str(sortie), str(dwg)], capture_output=True, timeout=600,
+                           cwd=str(Path(exe).parent))
+        if sortie.exists() and sortie.stat().st_size > 0:
+            return sortie
+        raise FormatNonLu(f"« {dwg.name} » : conversion DWG impossible avec LibreDWG ({(r.stderr or b'').decode(errors='ignore')[-200:]}). "
+                          "Installer ODA File Converter, ou demander un PDF vectoriel / DXF.")
     raise FormatNonLu(MESSAGE_DWG)
 
 
@@ -215,12 +222,47 @@ def dxf_vers_pdf(dxf: Path, sortie: Path, echelle: int = 100) -> Path:
     return sortie
 
 
+def cotes_verticales(dxf: Path) -> list[float]:
+    """Mesures des cotes verticales (DIMENSION à 90°) d'un DXF, en mètres : sur une coupe, HSP et épaisseurs de plancher."""
+    import ezdxf
+
+    doc = ezdxf.readfile(str(dxf))
+    unite = UNITES_M.get(doc.header.get("$INSUNITS", 0)) or 1.0
+    out = []
+    for d in doc.modelspace().query("DIMENSION"):
+        try:
+            if abs(abs(d.dxf.get("angle", 0) or 0) - 90) > 1:
+                continue
+            m = d.get_measurement()
+            if isinstance(m, (int, float)) and m > 0:
+                out.append(round(m * unite, 3))
+        except Exception:
+            continue
+    return out
+
+
+def hauteurs_coupe(cotes: list[float]) -> dict:
+    """HSP = cote verticale la plus fréquente entre 2,20 et 3,20 m ; hauteur d'étage = HSP + plancher (0,15-0,45 m)."""
+    from collections import Counter
+
+    hsp = Counter(round(c, 2) for c in cotes if 2.2 <= c <= 3.2)
+    if not hsp:
+        return {}
+    h = max(hsp.items(), key=lambda kv: (kv[1], -kv[0]))[0]
+    pl = Counter(round(c, 2) for c in cotes if 0.15 <= c <= 0.45)
+    out = {"hsp_m": h}
+    if pl:
+        out["plancher_m"] = max(pl.items(), key=lambda kv: kv[1])[0]
+        out["hauteur_etage_m"] = round(h + out["plancher_m"], 2)
+    return out
+
+
 # --------------------------------------------------------------------------- tri des fichiers d'un dossier
 
 def preparer(fichiers: list, dossier_travail: Path | None = None) -> dict:
     """Range les fichiers par usage. Retourne {plans: [pdf], documents: [fichiers lisibles], non_lus: [(nom, raison)]}."""
     travail = Path(dossier_travail or tempfile.mkdtemp(prefix="re2020_"))
-    plans, docs, non_lus = [], [], []
+    plans, docs, non_lus, cotes = [], [], [], []
     for f in map(Path, fichiers):
         ext = f.suffix.lower()
         try:
@@ -229,6 +271,12 @@ def preparer(fichiers: list, dossier_travail: Path | None = None) -> dict:
                 docs.append(f)
             elif ext in (".dxf", ".dwg"):
                 dxf = dwg_vers_dxf(f, travail) if ext == ".dwg" else f
+                try:
+                    cv = cotes_verticales(dxf)
+                    if cv:
+                        cotes.append((f.name, cv))
+                except Exception:
+                    pass
                 pdf = dxf_vers_pdf(dxf, travail / (f.stem + "_dxf.pdf"))
                 plans.append(pdf)
                 docs.append(pdf)
@@ -242,5 +290,5 @@ def preparer(fichiers: list, dossier_travail: Path | None = None) -> dict:
             non_lus.append((f.name, str(exc)))
         except Exception as exc:  # fichier abîmé, version DXF exotique…
             non_lus.append((f.name, f"illisible ({type(exc).__name__} : {exc})"))
-    return {"plans": plans, "documents": docs, "non_lus": non_lus}
+    return {"plans": plans, "documents": docs, "non_lus": non_lus, "cotes_verticales": cotes}
 

@@ -61,3 +61,21 @@ def test_plan_dxf_murs_en_traits(dossier):
     assert abs(v(e["hypotheses"]["Uw"]) - (1.62 * 1.2 + 1.25 * 1.2 + 4.3 * 1.4) / 7.17) < 0.01
     assert all(c["statut"] == "ok" for c in e["controles"])
     assert len(e["fichiers"]["non_lus"]) == 2 and any("DWG non lus" in a and "plan.dwg" in a for a in e["alertes"])
+
+
+def test_elevations_et_coupes_ne_sont_pas_des_plans():
+    from re2020.plans.extraction import vue_non_plan
+
+    assert vue_non_plan("02_ELEVATIONS PROJET LOT 3.pdf", "") == "élévation"
+    assert vue_non_plan("COUPES_PROJET_-_LOT_3_dxf.pdf", "") == "coupe"
+    assert vue_non_plan("plan.pdf", "Faitage NGF +168,26 Egout") is not None
+    assert vue_non_plan("01_PLANS__PROJET_LOT_3.pdf", "") is None
+    assert vue_non_plan("dossier.pdf", "PLAN RDC façades nord") is None
+
+
+def test_hsp_et_hauteur_etage_depuis_les_cotes_de_coupe():
+    from re2020.formats import hauteurs_coupe
+
+    h = hauteurs_coupe([2.5, 0.25, 2.959, 2.498, 0.252, 4.25])  # cotes de la coupe Charleville (DWG)
+    assert h == {"hsp_m": 2.5, "plancher_m": 0.25, "hauteur_etage_m": 2.75}
+    assert hauteurs_coupe([12.0, 0.05]) == {}

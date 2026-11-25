@@ -20,6 +20,7 @@ from pathlib import Path
 import pdfplumber
 
 from ..catalogues.db import type_paroi
+from ..localisation import candidats as candidats_lieu
 from ..plans.textes import lire_hauteurs
 from ..trace import val
 
@@ -45,7 +46,8 @@ class _Lecteur:
     def __init__(self):
         self.d: dict = {"infos": {}, "parois": [], "menuiseries": [], "ponts_thermiques": {"liaisons": []},
                         "baies": [], "locaux": [], "bilan_facades": [], "surfaces": {}, "ventilation": {},
-                        "chauffage": {}, "ecs": {}, "eclairage": {}, "hauteurs": {}, "pages_lues": []}
+                        "chauffage": {}, "ecs": {}, "eclairage": {}, "hauteurs": {}, "pages_lues": [],
+                        "localisation_candidats": []}
 
     def lu(self, valeur, source, unite=None, conf="haute", **extra):
         return val(valeur, "lu", source, conf, unite, **extra)
@@ -120,8 +122,9 @@ class _Lecteur:
                 I["q4"] = self.lu(_nb(v), src, "m³/(h.m²)")
             elif "occupant" in k:
                 I["occupants"] = self.lu(_nb(v), src)
-            elif k.startswith("adresse"):
-                I["adresse"] = self.lu(v, src)
+            elif k.startswith(("adresse", "commune", "localisation", "lieu", "situation")):
+                I.setdefault("adresse", self.lu(v, src))
+                self.d["localisation_candidats"] += candidats_lieu(f"adresse du projet : {v}", src, 3.0)
             elif "bruit" in k:
                 I["exposition_bruit"] = self.lu(v, src)
             elif "emprise" in k:
@@ -305,6 +308,8 @@ def _lire_pdf(lect: _Lecteur, ch: Path):
 
 def _lire_bloc(lect: _Lecteur, src: str, tableaux: list, txt: str):
     lect.section = ""
+    poids = 1.5 if re.search(r"notice|rset|cctp|descriptif|attestation", txt, re.I) else 1.0
+    lect.d["localisation_candidats"] += candidats_lieu(txt, src, poids)
     n_avant = len(str(lect.d))
     for t in tableaux:
         lect.tableau(t, src)

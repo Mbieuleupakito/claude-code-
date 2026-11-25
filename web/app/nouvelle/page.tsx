@@ -95,13 +95,13 @@ export default function NouvelleEtude() {
             <div className="champ">
               <label htmlFor="zone">Zone climatique</label>
               <select id="zone" name="zone" className="entree" defaultValue="">
-                <option value="">Lue dans la notice</option>
+                <option value="">Lue ou déduite du lieu du projet</option>
                 {(config?.zones ?? []).map((z) => <option key={z}>{z}</option>)}
               </select>
             </div>
             <div className="champ">
               <label htmlFor="altitude_m">Altitude (m)</label>
-              <input id="altitude_m" name="altitude_m" type="number" min={0} max={3000} className="entree" placeholder="Lue dans la notice si vide" />
+              <input id="altitude_m" name="altitude_m" type="number" min={0} max={3000} className="entree" placeholder="Lue, ou cherchée d'après la commune" />
             </div>
             <div className="champ">
               <label htmlFor="date_pc">Date de dépôt du permis</label>

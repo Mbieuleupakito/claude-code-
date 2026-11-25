@@ -56,3 +56,9 @@ Les valeurs de `data/catalogues/fiches_acv.json` sont supposées. Remplir `data/
 Le DWG est un format fermé : il est converti en DXF **sur ce poste** si **ODA File Converter** (gratuit) est installé
 (https://www.opendesign.com/guestfiles/oda_file_converter), ou LibreDWG (`dwg2dxf`). Sinon l'outil le signale et lit le
 reste du dossier. Rien n'est envoyé sur Internet.
+
+## Zone climatique et altitude
+Si le dossier ne les donne pas, la zone est déduite du département du chantier (code postal, « Ville (38) »…) avec le
+tableau officiel, sans Internet. L'altitude est demandée aux services de l'État (Base Adresse Nationale, IGN) avec la
+seule commune ; sans réseau, l'outil suppose moins de 400 m et le signale. Pour tout couper : variable
+`RE2020_HORS_LIGNE=1`.

@@ -16,6 +16,8 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 4. Les seuils dépendent de la date de dépôt du PC (décret 2026-200 : PC ≥ 1er juillet 2026). Tant que MbHSP/McHSP
    sont inconnus, marquer les seuils « approx ».
 5. Confidentialité : les plans et données clients restent locaux ; ne pas les envoyer vers des services tiers.
+   Seule exception, demandée par l'utilisateur : commune + code postal vers les services publics (BAN, IGN) pour
+   l'altitude ; jamais l'adresse complète ni les documents. RE2020_HORS_LIGNE=1 coupe tout appel.
 6. Formats : PDF vectoriel et DXF lus directement ; DWG seulement converti SUR LE POSTE (ODA File Converter ou
    LibreDWG installés), jamais par un service en ligne ; Word/Excel/texte lus comme une notice ; images non lues
    (signalées). Le DXF est redessiné en PDF vectoriel à 1:100 (`formats.py`) ; murs en traits reconnus par calque.
@@ -40,6 +42,10 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   Plans : PDF multi-pages (pages de plans trouvées seules), murs « peints » (aplat + intérieur blanc), baies en aplats
   de couleur typées par la légende, échelle calée sur les cotes écrites, « NORD ↑ » écrit, hauteurs lues.
   Usage tertiaire détecté → verdicts « hors périmètre » (seuils et modèle = maison individuelle).
+- `src/re2020/localisation.py` (fait) : lieu du projet (codes postaux, « Ville (38) », départements ; l'adresse du chantier
+  est préférée à celles des intervenants) → zone climatique par département (tableau de l'arrêté, hors ligne) ; altitude
+  en ligne (Base Adresse Nationale + altimétrie IGN) en n'envoyant que commune + code postal, désactivable
+  (RE2020_HORS_LIGNE=1) ; sinon < 400 m supposé. Date de PC absente → date du jour supposée + alerte.
 - `src/re2020/catalogues/` (fait) : JSON de `data/catalogues` → SQLite ; U multicouche (± 3 % des Up Pléiades),
   recherche par type de paroi / U cible / matériau, épaisseur pour un U cible, λ +15 % si non certifié, Ψ ITE/ITI.
 - `src/re2020/estimation/` (fait) : modèle saisonnier calé sur le RSET Charleville (`data/references/charleville_calage.json`),

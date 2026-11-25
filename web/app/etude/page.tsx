@@ -448,6 +448,7 @@ function SectionDossier({ e }: { e: Etude }) {
           <div className="carte carte-corps">
             <h3 style={{ marginBottom: 12 }}>Projet</h3>
             <dl className="liste-def">
+              <Ligne nom="Lieu du projet" v={src.lieu} />
               <Ligne nom="Zone climatique" v={src.zone} />
               <Ligne nom="Altitude" v={src.altitude_m} decimales={0} />
               <Ligne nom="Dépôt du permis" v={src.date_pc} />

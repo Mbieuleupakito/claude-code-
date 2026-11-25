@@ -11,6 +11,7 @@ from .catalogues import Catalogue
 from .documents import lire_dossier
 from .estimation import entrees_depuis_plan, estimer
 from .formats import preparer
+from .localisation import localiser
 from .plans import extraire_plan
 from .plans.textes import famille, meme_repere, normaliser_niveau, sans_accents
 from .propositions import proposer
@@ -212,9 +213,25 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     cat = catalogue or Catalogue()
     dossier = dossier or {}
     inf = dossier.get("infos", {})
-    zone_v, zone_t = _param("zone", p.zone, inf.get("zone"), "Zone climatique")
-    alt_v, alt_t = _param("altitude", p.altitude_m, inf.get("altitude_m"), "Altitude")
-    dpc_v, dpc_t = _param("date_pc", p.date_pc, inf.get("date_pc"), "Date de dépôt du permis")
+    alertes_lieu = []
+    lieu = {}
+    if (p.zone in (None, "") and not inf.get("zone")) or (p.altitude_m is None and not inf.get("altitude_m")):
+        lieu = localiser(dossier.get("localisation_candidats", []))
+        if lieu.get("note"):
+            alertes_lieu.append("Localisation : " + lieu["note"])
+    zone_v, zone_t = _param("zone", p.zone, inf.get("zone") or lieu.get("zone"),
+                            "Zone climatique (ni zone, ni code postal, ni département trouvé)")
+    alt_lu = inf.get("altitude_m") or lieu.get("altitude_m")
+    if p.altitude_m is None and not alt_lu:
+        alt_lu = val(100.0, "supposé", "altitude introuvable (hors ligne ou commune inconnue) : classe < 400 m supposée", "faible", "m")
+        alertes_lieu.append("Altitude non trouvée : terrain supposé sous 400 m. La saisir si le projet est plus haut "
+                            "(les seuils changent à 400 m et 800 m).")
+    alt_v, alt_t = _param("altitude", p.altitude_m, alt_lu, "Altitude")
+    dpc_lu = inf.get("date_pc")
+    if p.date_pc in (None, "") and not dpc_lu:
+        dpc_lu = val(date.today().isoformat(), "supposé", "date de dépôt du PC introuvable : date du jour supposée", "faible")
+        alertes_lieu.append("Date de dépôt du PC non trouvée : date du jour supposée (elle fixe les seuils : la saisir).")
+    dpc_v, dpc_t = _param("date_pc", p.date_pc, dpc_lu, "Date de dépôt du permis")
     zone = zone_normalisee(zone_v)
     controles = controles_croises(plan, dossier) if dossier else []
     if dossier:
@@ -232,7 +249,7 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
 
     tertiaire = inf.get("residentiel", {}).get("valeur") is False
     qualite = qualite_lecture(plan, entrees, estimation, dossier)
-    alertes = list(plan["alertes"]) + list(hyp.get("alertes", []))
+    alertes = alertes_lieu + list(plan["alertes"]) + list(hyp.get("alertes", []))
     if qualite["niveau"] == "insuffisante":
         alertes.insert(0, "LECTURE DU PLAN INSUFFISANTE : " + " ; ".join(qualite["graves"])
                        + (". À fournir : " + " ; ".join(qualite["conseils"]) if qualite["conseils"] else ""))
@@ -271,7 +288,7 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
         "projet": p.projet,
         "date_rapport": date.today().isoformat(),
         "parametres": params,
-        "parametres_sources": {"zone": zone_t, "altitude_m": alt_t, "date_pc": dpc_t},
+        "parametres_sources": {"zone": zone_t, "altitude_m": alt_t, "date_pc": dpc_t, **({"lieu": lieu["lieu"]} if lieu.get("lieu") else {})},
         "usage": inf.get("usage"),
         "tertiaire": tertiaire,
         "qualite": qualite,

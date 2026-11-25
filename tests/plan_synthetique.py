@@ -150,3 +150,81 @@ def generer_l(chemin, angle_nord_deg=90.0):
         c.line(tip[0], Y(tip[1]), tip[0] + 4 * math.cos(a), Y(tip[1] + 4 * math.sin(a)))
     c.showPage()
     c.save()
+
+
+def generer_dossier_peint(chemin):
+    """Dossier de 2 pages « style plan d'entraînement » : murs = grand aplat recouvert par l'intérieur blanc,
+    baies = aplats de couleur sur le mur avec légende, dimensions écrites, « NORD ↑ », pas de mention d'échelle
+    (dessin au 1:80) ; page 2 = notice avec tableaux (infos, parois, menuiseries, ponts thermiques)."""
+    from reportlab.lib import colors
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    import os
+
+    W, H = 842.0, 595.0
+    M = 72 / 0.0254 / 80
+    c = canvas.Canvas(str(chemin) + ".p1.pdf", pagesize=(W, H))
+    fonte = "Helvetica"
+    for f in ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",):
+        if os.path.exists(f):
+            pdfmetrics.registerFont(TTFont("DejaVu", f))
+            fonte = "DejaVu"
+    Y = lambda y: H - y
+    x0, y0, L, P, ep = 120.0, 130.0, 12.0 * M, 8.0 * M, 0.40 * M   # extérieur 12 x 8 m, mur 40 cm → intérieur 11,2 x 7,2
+    c.setFillColorRGB(0.12, 0.6, 0.88)
+    c.rect(x0, Y(y0 + P), L, P, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.rect(x0 + ep, Y(y0 + P - ep), L - 2 * ep, P - 2 * ep, fill=1, stroke=0)
+    c.setFillColorRGB(1, 0.5, 0.15)  # fenêtres F 1,20 m : 2 au sud, 1 au nord
+    for xm in (2.0, 7.0):
+        c.rect(x0 + xm * M, Y(y0 + P), 1.2 * M, ep, fill=1, stroke=1)
+    c.rect(x0 + 5.0 * M, Y(y0 + ep), 1.2 * M, ep, fill=1, stroke=1)
+    c.setFillColorRGB(1, 0, 1)  # porte vitrée PV 1,80 m au sud
+    c.rect(x0 + 9.5 * M, Y(y0 + P), 1.8 * M, ep, fill=1, stroke=1)
+    c.setFillColorRGB(0, 0, 0)
+    c.setFont(fonte, 14)
+    c.drawString(60, Y(50), "Plan RDC · niveau +0,00")
+    c.setFont(fonte, 8)
+    c.drawString(60, Y(66), "Dimensions intérieures 11,20 × 7,20 m · hauteur d'étage 2,80 m")
+    c.drawString(x0 + L / 2 - 20, Y(y0 - 20), "NORD ↑")
+    c.drawString(x0 + L / 2 - 60, Y(y0 + P + 30), "12,00 m (extérieur) · 11,20 m (intérieur)")
+    for i, (coul, txt) in enumerate((((0.12, 0.6, 0.88), "Mur 1a"), ((1, 0.5, 0.15), "Fenêtre F"), ((1, 0, 1), "Porte vitrée PV"))):
+        c.setFillColorRGB(*coul)
+        c.rect(60 + 120 * i, Y(560), 12, 8, fill=1, stroke=1)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(78 + 120 * i, Y(558), txt)
+    c.drawString(60, Y(578), "Menuiseries : fenêtres 1,20 × 1,35 m, porte vitrée 1,80 × 2,15 m.")
+    c.showPage()
+    c.save()
+
+    st = getSampleStyleSheet()
+    doc = SimpleDocTemplate(str(chemin) + ".p2.pdf")
+    style = TableStyle([("GRID", (0, 0), (-1, -1), 0.5, colors.black), ("FONTNAME", (0, 0), (-1, -1), fonte)])
+    t = lambda d: Table(d, style=style)
+    doc.build([
+        Paragraph("Notice thermique", st["Title"]),
+        t([["Usage", "Maison individuelle"], ["Zone climatique / altitude", "H2b / 35 m"],
+           ["Date du dépôt de PC", "15/09/2026"], ["Q4", "0,6 m³/(h.m²)"], ["Sref", "80,6 m²"]]),
+        t([["Réf.", "Désignation", "Up W/(m².K)", "Composition"],
+           ["1a", "Mur extérieur maçonnerie", "0,21", "Brique 200 mm, λ = 0,30 Laine de verre 120 mm, λ = 0,032"],
+           ["2a", "Plancher bas", "0,18", "Dalle béton 200 mm PSE 120 mm, λ = 0,031"],
+           ["3a", "Plafond sous combles", "0,11", "Laine soufflée 350 mm, λ = 0,040"]]),
+        t([["Repère", "Désignation", "Vitrage", "Performance globale", "Quantité"],
+           ["F", "Fenêtre 1,20 × 1,35 m", "g ≥ 0,48 ; TL ≥ 65 %", "Uw ≤ 1,30", "3 (4,86 m²)"],
+           ["PV", "Porte vitrée 1,80 × 2,15 m", "g ≥ 0,50", "Uw ≤ 1,50", "1 (3,87 m²)"]]),
+        t([["Liaison", "Ψ W/(m.K)", "Linéaire m", "Ψ × L W/K"], ["Plancher bas / mur", "0,40", "36,8", "14,72"],
+           ["Total", "", "", "14,72"]]),
+        Paragraph("6. Ventilation", st["Heading2"]),
+        Paragraph("VMC simple flux hygroréglable type B.", st["Normal"]),
+        Paragraph("7. Chauffage, ECS", st["Heading2"]),
+        Paragraph("Chauffage : pompe à chaleur air/eau, émission par plancher chauffant. ECS : chauffe-eau thermodynamique 200 L.", st["Normal"]),
+        Paragraph("Coupe : hauteur sous plafond 2,50 m.", st["Normal"]),
+    ])
+    from pypdf import PdfWriter
+    w = PdfWriter()
+    for part in (str(chemin) + ".p1.pdf", str(chemin) + ".p2.pdf"):
+        w.append(part)
+    with open(chemin, "wb") as fh:
+        w.write(fh)

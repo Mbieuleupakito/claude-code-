@@ -16,7 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 api = ["fastapi", "uvicorn", "python-multipart"]
 rapport = ["weasyprint"]
-dev = ["pytest", "reportlab", "pyflakes"]
+dev = ["pytest", "reportlab", "pyflakes", "pypdf", "httpx"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -14,6 +14,7 @@ Chaque valeur sortie est tracée (lu / déduit / supposé + confiance), cf. CLAU
 from __future__ import annotations
 
 import math
+import re
 import statistics as st
 from collections import Counter
 from pathlib import Path
@@ -24,28 +25,100 @@ from shapely.geometry import Point
 from ..trace import val
 from . import nord as nord_mod
 from .echelle import consensus, ratios_lignes_de_cote
-from .murs import analyser_facades, couleur, couleur_hachures, formes_remplies, murs, vues_en_plan
-from .textes import lire_echelles, lire_etiquettes_baies, lire_niveaux, lire_pieces, m_par_pt, phrases_de_page
+from .murs import (analyser_facades, couleur, couleur_hachures, couleur_murs, formes_remplies, marqueurs_ouvertures, murs,
+                   vues_en_plan)
+from .textes import (EtiquetteBaie, correspond, lire_dimensions_types, lire_echelles, lire_etiquettes_baies, lire_hauteurs,
+                     lire_legende, lire_niveaux, lire_nord_texte, lire_pieces, m_par_pt, phrases_de_page, valeurs_metriques)
+
+MANQUANTS = ["hauteurs d'étage et HSP (coupe)", "compositions murs / plancher bas / toiture (notice, CCTP)",
+             "menuiseries : Uw, Sw, TLw, occultations", "type de toiture (combles perdus / rampants / terrasse)",
+             "nature des refends et planchers (ponts thermiques)", "systèmes chauffage / ECS / ventilation"]
 
 DISTANCE_ETIQUETTE_M = 3.0  # distance max étiquette ↔ ouverture
 
 
-def extraire_plan(chemin: str | Path, page: int = 0, hsp_m: float = 2.50, denominateur: int | None = None,
+def extraire_plan(chemin, page: int | None = None, hsp_m: float | None = None, denominateur: int | None = None,
                   angle_nord_deg: float | None = None) -> dict:
-    """Lit un plan PDF vectoriel et retourne le JSON normalisé (valeurs tracées lu / déduit / supposé).
+    """Lit un ou plusieurs PDF vectoriels et retourne le JSON normalisé (valeurs tracées lu / déduit / supposé).
 
-    ``denominateur`` : force l'échelle (1:N) ; ``angle_nord_deg`` : force le nord (° depuis le haut de la
-    feuille, positif vers la droite) ; ``hsp_m`` : hauteur sous plafond supposée.
+    ``chemin`` : un PDF ou une liste de PDF (plans, coupe, notice…). Sans ``page``, toutes les pages sont
+    parcourues et les vues en plan titrées (« RDC », « R+1 »…) sont gardées. ``denominateur`` force
+    l'échelle (1:N) ; ``angle_nord_deg`` force le nord ; ``hsp_m`` force la hauteur sous plafond.
     """
-    chemin = Path(chemin)
-    with pdfplumber.open(chemin) as pdf:
-        return _Extraction(pdf.pages[page], hsp_m, denominateur, angle_nord_deg).run(chemin.name, page)
+    chemins = [Path(c) for c in (chemin if isinstance(chemin, (list, tuple)) else [chemin])]
+    resultats, textes, echecs = [], [], []
+    for ic, ch in enumerate(chemins):
+        with pdfplumber.open(ch) as pdf:
+            pages = [page] if page is not None else range(len(pdf.pages))
+            for i in pages:
+                p = pdf.pages[i]
+                textes.append(p.extract_text() or "")
+                try:
+                    r = _Extraction(p, denominateur, angle_nord_deg).run(ch.name, i)
+                except ValueError as exc:
+                    if page is not None and len(chemins) == 1:
+                        raise
+                    echecs.append(str(exc))
+                    continue
+                r["_fichier"] = ic
+                resultats.append(r)
+    if not resultats:
+        raise ValueError(echecs[0] if len(echecs) == 1 else
+                         "Aucun plan de niveau reconnu dans le dossier (murs non remplis ?). Demander un PDF avec murs "
+                         "en aplat, ou un DXF.")
+    titres = [r for r in resultats if any(n["niveau"]["tag"] == "lu" for n in r["niveaux"])]
+    return _fusionner(titres or resultats, "\n".join(textes), hsp_m, [c.name for c in chemins])
+
+
+def _fusionner(resultats: list[dict], texte: str, hsp_force: float | None, noms: list[str]) -> dict:
+    """Assemble les niveaux trouvés sur plusieurs pages (un niveau = la meilleure vue portant ce titre)."""
+    par_niveau: dict[str, dict] = {}
+    for r in resultats:
+        for n in r["niveaux"]:
+            if len(resultats) > 1 and n["niveau"]["tag"] != "lu":
+                continue
+            n["_page"] = r["page"]
+            n["_fichier"] = r["_fichier"]
+            nom = n["niveau"]["valeur"]
+            score = (len(n["baies"]), n["surface_interieure_m2"]["valeur"])
+            if nom not in par_niveau or score > par_niveau[nom][0]:
+                par_niveau[nom] = (score, n)
+    niveaux = [n for _, n in sorted(par_niveau.values(), key=lambda x: _ordre(x[1]["niveau"]["valeur"]))]
+    if not niveaux:
+        niveaux = [n for r in resultats for n in r["niveaux"]]
+    pages_utiles = {(n["_fichier"], n["_page"]) for n in niveaux}
+    gardes = [r for r in resultats if (r["_fichier"], r["page"]) in pages_utiles] or resultats
+    ref = gardes[0]
+    nord = next((r["nord"] for r in gardes if r["nord"]["valeur"] is not None), ref["nord"])
+    h = lire_hauteurs(texte)
+    if hsp_force is not None:
+        hsp = val(hsp_force, "lu", "fourni par l'utilisateur", "haute", "m")
+    elif "hsp_m" in h:
+        hsp = val(h["hsp_m"], "lu", "« hauteur sous plafond » écrite dans le dossier (coupe)", "haute", "m")
+    else:
+        hsp = val(2.50, "supposé", "valeur par défaut (non lisible sur un plan) → lire la coupe", "faible", "m")
+    h_etage = val(h["hauteur_etage_m"], "lu", "« hauteur d'étage » écrite dans le dossier", "haute", "m") if "hauteur_etage_m" in h else None
+    alertes = []
+    for r in gardes:
+        pref = f"p.{r['page'] + 1} : " if len(gardes) > 1 or r["page"] else ""
+        alertes += [pref + a for a in r["alertes"] if pref + a not in alertes]
+    return {
+        "source": " + ".join(noms),
+        "page": ref["page"],
+        "pages_plans": sorted({f"{noms[r['_fichier']]} p.{r['page'] + 1}" for r in gardes}),
+        "echelle": ref["echelle"],
+        "echelles_par_page": {f"p.{r['page'] + 1}": r["echelle"]["denominateur"]["valeur"] for r in gardes},
+        "nord": nord,
+        "niveaux": niveaux,
+        "batiment": batiment(niveaux, hsp, h_etage),
+        "alertes": alertes,
+        "manquants": MANQUANTS,
+    }
 
 
 class _Extraction:
-    def __init__(self, page, hsp_m, denominateur, angle_nord_deg):
+    def __init__(self, page, denominateur, angle_nord_deg):
         self.p = page
-        self.hsp = hsp_m
         self.denominateur_force = denominateur
         self.angle_force = angle_nord_deg
         self.alertes: list[str] = []
@@ -58,6 +131,8 @@ class _Extraction:
             hach = [o for o in self.p.lines if coul is not None and couleur(o) == coul
                     and max(o["x1"] - o["x0"], o["bottom"] - o["top"]) * k < 0.5] if coul else []
             analyser_facades(v, hach, k)
+            v.couleur = couleur_murs(v, self.formes)
+            marqueurs_ouvertures(v, self.formes, k, v.couleur)
         return vues
 
     def _apparier(self, vues, k):
@@ -100,12 +175,23 @@ class _Extraction:
         for ie, (iv, jf, a, b) in apparies:
             r_baies.append(self.etiquettes[ie].largeur_m / (b - a))
         r_cotes = ratios_lignes_de_cote(self.phrases, self.p.lines)
-        cons = consensus(r_cotes + r_baies, tol=0.03, mini=2)
-        src_cotes = f"{len(r_cotes)} ligne(s) de cote, {len(r_baies)} largeur(s) de baie"
+        longueurs = []
+        for v in vues0:  # dimensions extérieures et intérieures mesurées, à rapprocher des cotes écrites
+            x0, y0, x1, y1 = v.enveloppe.bounds
+            longueurs += [x1 - x0, y1 - y0]
+            if v.interieur is not None:
+                ix0, iy0, ix1, iy1 = v.interieur.bounds
+                longueurs += [ix1 - ix0, iy1 - iy0]
+        ecrites = valeurs_metriques(self.texte)
+        r_texte = [x / L for x in ecrites for L in longueurs if L > 20]
+        cons = consensus(r_cotes + r_baies + r_texte, tol=0.015, mini=2)
+        n_texte = sum(1 for r in r_texte if cons and abs(r - cons[0]) <= 0.015 * cons[0])
+        src_cotes = (f"{len(r_cotes)} ligne(s) de cote, {len(r_baies)} largeur(s) de baie, "
+                     f"{n_texte} dimension(s) écrite(s) rapprochée(s) du contour")
         if cons:
             k_cal, n = cons
             d_cal = round(k_cal / m_par_pt(1))
-            if k_mention and abs(k_cal - k_mention) / k_mention <= 0.03:
+            if k_mention and (abs(k_cal - k_mention) / k_mention <= 0.03 or n < 3):
                 return k_mention, val(d, "lu", f"mention « Ech 1:{d} », confirmée par {n} cote(s) écrite(s) ({src_cotes})", "haute"), True
             if k_mention:
                 self.alertes.append(f"Échelle : la mention dit 1:{d} mais {n} cote(s) écrite(s) donnent 1:{d_cal} "
@@ -121,6 +207,9 @@ class _Extraction:
         if self.angle_force is not None:
             return val(round(self.angle_force, 1), "lu", "fourni par l'utilisateur", "haute", "°")
         fleches = nord_mod.detecter_fleches_nord(self.p.lines)
+        if not fleches and (a := lire_nord_texte(self.texte)) is not None:
+            return val(a, "lu", "flèche « NORD » écrite sur le plan", "moyenne", "°",
+                       explication="angle du nord par rapport au haut de la feuille, positif vers la droite")
         if not fleches:
             self.alertes.append("Nord non détecté : saisir l'orientation à la main (--nord).")
             return val(None, "supposé", "symbole du nord non détecté", "faible", "°")
@@ -138,14 +227,18 @@ class _Extraction:
     # ------------------------------------------------------------------ principal
     def run(self, nom_source, num_page):
         self.phrases = phrases_de_page(self.p)
+        self.texte = self.p.extract_text() or ""
         self.etiquettes = lire_etiquettes_baies(self.phrases)
         self.formes = formes_remplies(self.p)
+        if not self.formes:
+            raise ValueError("Aucun mur détecté : page sans formes remplies.")
         k, ech, _ = self._echelle()
         vues = self._geometrie(k)
         if not vues:
             raise ValueError("Aucun mur détecté : style de dessin non reconnu (murs non remplis ?). "
                              "Demander un PDF avec murs en aplat, ou un DXF.")
         apparies, libres = self._apparier(vues, k)
+        libres = self._baies_en_aplat(vues, k, apparies, libres)
         nord = self._nord()
         angle = nord["valeur"]
         niveaux = self._niveaux(vues, k)
@@ -169,12 +262,39 @@ class _Extraction:
             "echelle": {"denominateur": ech, "m_par_pt": round(k, 6)},
             "nord": nord,
             "niveaux": out_niv,
-            "batiment": self._batiment(out_niv),
             "alertes": self.alertes,
-            "manquants": ["hauteurs d'étage et HSP (coupe)", "compositions murs / plancher bas / toiture (notice, CCTP)",
-                          "menuiseries : Uw, Sw, TLw, occultations", "type de toiture (combles perdus / rampants / terrasse)",
-                          "nature des refends et planchers (ponts thermiques)", "systèmes chauffage / ECS / ventilation"],
         }
+
+    def _baies_en_aplat(self, vues, k, apparies, libres):
+        """Ouvertures dessinées en aplat de couleur : type par la légende, dimensions par le texte du plan."""
+        pastilles = []
+        for pg, c in self.formes:
+            x0, y0, x1, y1 = pg.bounds
+            if 3 <= x1 - x0 <= 25 and 3 <= y1 - y0 <= 25:
+                pastilles.append(((x0, y0, x1, y1), c))
+        legende = lire_legende(self.phrases, pastilles)
+        types = lire_dimensions_types(self.texte)
+        restants = []
+        for (iv, jf, a, b) in libres:
+            f = vues[iv].facades[jf]
+            c = next((c for (m0, m1, c) in f.marqueurs if m0 < b and m1 > a), None)
+            if c is None:
+                restants.append((iv, jf, a, b))
+                continue
+            lib = legende.get(c, "")
+            dernier = lib.split()[-1] if lib else ""
+            code = dernier if re.fullmatch(r"[A-Z]{1,4}\d*", dernier) else (lib or "baie")
+            dims = next((t for t in types if lib and correspond(lib, t["nom"])), None)
+            cx, cy = f.point((a + b) / 2)
+            src = f"dimensions « {dims['nom']} » écrites sur le plan" if dims else ""
+            e = EtiquetteBaie(nom=code, largeur_m=dims["largeur_m"] if dims else round((b - a) * k, 2),
+                              hauteur_m=dims["hauteur_m"] if dims else 1.35, allege_m=None, x=cx, y=cy, sens="ltr",
+                              complement=lib, tag_l="lu" if dims else "déduit",
+                              src_l=src or "largeur mesurée sur le plan", tag_h="lu" if dims else "supposé",
+                              src_h=src or "hauteur courante supposée (non écrite)")
+            self.etiquettes.append(e)
+            apparies.append((len(self.etiquettes) - 1, (iv, jf, a, b)))
+        return restants
 
     def _niveaux(self, vues, k):
         lus = lire_niveaux(self.phrases)
@@ -232,9 +352,9 @@ class _Extraction:
             larg_plan = (b - a) * k
             d = {"nom": e.nom, "facade": f"F{jf + 1}", "cote_feuille": f.nom_cote,
                  "orientation": facades[jf].get("orientation", {}).get("valeur"),
-                 "largeur_m": val(e.largeur_m, "lu", "étiquette (cm)", "haute", "m"),
-                 "hauteur_m": val(e.hauteur_m, "lu", "étiquette (cm)", "haute", "m"),
-                 "surface_m2": val(round(e.largeur_m * e.hauteur_m, 2), "déduit", "L x H de l'étiquette", "haute", "m²"),
+                 "largeur_m": val(e.largeur_m, e.tag_l, e.src_l, "haute" if e.tag_l == "lu" else "moyenne", "m"),
+                 "hauteur_m": val(e.hauteur_m, e.tag_h, e.src_h, "haute" if e.tag_h == "lu" else "faible", "m"),
+                 "surface_m2": val(round(e.largeur_m * e.hauteur_m, 2), "déduit", "largeur x hauteur", "haute" if e.tag_h == "lu" else "faible", "m²"),
                  "largeur_mesuree_plan_m": val(round(larg_plan, 2), "déduit", "ouverture dans le mur / l'isolant", "moyenne", "m")}
             if e.allege_m is not None:
                 d["allege_m"] = val(e.allege_m, "lu", "étiquette « all. »", "haute", "m")
@@ -277,56 +397,62 @@ class _Extraction:
             "_contour_pt": [[round(x, 1), round(y, 1)] for x, y in v.enveloppe.exterior.coords],
         }
 
-    def _batiment(self, niv):
-        hsp = self.hsp
-        nb = len(niv)
-        pinter = [n["perimetre_interieur_m"]["valeur"] for n in niv]
-        toutes = [b for n in niv for b in n["baies"]]
-        baies_o: dict[str, float] = {}
-        for b in toutes:
-            o = b["orientation"] or b["facade"]
-            baies_o[o] = round(baies_o.get(o, 0) + b["surface_m2"]["valeur"], 2)
-        murs_o: dict[str, float] = {}
-        for n in niv:
-            for f in n["facades"]:
-                o = f.get("orientation", {}).get("valeur") or f["id"]
-                murs_o[o] = murs_o.get(o, 0) + f["longueur_int_m"]["valeur"] * hsp
-        murs_o = {o: {"brut_m2": round(s, 1), "net_m2": round(s - baies_o.get(o, 0), 1)} for o, s in murs_o.items()}
-        larg = sum(b["largeur_m"]["valeur"] for b in toutes)
-        haut = sum(b["hauteur_m"]["valeur"] for b in toutes)
-        sal = sum(n["angles"]["saillants"] for n in niv)
-        ren = sum(n["angles"]["rentrants"] for n in niv)
-        nref = sum(n["refends_en_facade"]["valeur"] for n in niv)
-        D, S = "déduit", "supposé"
-        pt = {
-            "plancher_bas_mur_ml": val(round(pinter[0], 1), D, "périmètre intérieur du niveau bas", "moyenne", "m",
-                                       liaison="mur / plancher bas"),
-            "plancher_intermediaire_mur_ml": val(round(sum(pinter[1:]), 1), D, "périmètres intérieurs des niveaux supérieurs", "moyenne", "m",
-                                                 liaison="mur / plancher intermédiaire"),
-            "plancher_haut_mur_ml": val(round(pinter[-1], 1), S, "périmètre du dernier niveau (toiture au-dessus supposée)", "faible", "m",
-                                        liaison="mur / plancher haut ou toiture"),
-            "refend_mur_ml": val(round(nref * hsp, 1), D, f"{nref} jonction(s) x HSP", "faible", "m", liaison="refend / mur"),
-            "angle_saillant_ml": val(round(sal * hsp, 1), D, f"{sal} angle(s) x HSP", "moyenne", "m", liaison="angle de mur saillant"),
-            "angle_rentrant_ml": val(round(ren * hsp, 1), D, f"{ren} angle(s) x HSP", "moyenne", "m", liaison="angle de mur rentrant"),
-            "menuiserie_appui_ml": val(round(larg, 1), D, "Σ largeurs des baies", "haute", "m", liaison="menuiserie / mur : appui"),
-            "menuiserie_linteau_ml": val(round(larg, 1), D, "Σ largeurs des baies", "haute", "m", liaison="menuiserie / mur : linteau"),
-            "menuiserie_tableaux_ml": val(round(2 * haut, 1), D, "Σ 2 x hauteurs des baies", "haute", "m", liaison="menuiserie / mur : tableaux"),
-        }
-        s_int = sum(n["surface_interieure_m2"]["valeur"] for n in niv)
-        return {
-            "nombre_niveaux": val(nb, D, "vues en plan détectées", "haute"),
-            "hauteur_sous_plafond_m": val(hsp, S, "valeur par défaut (non lisible sur un plan) → lire la coupe", "faible", "m"),
-            "surface_interieure_totale_m2": val(round(s_int, 1), D, "Σ surfaces intérieures", "moyenne", "m²",
-                                                note="proche de la Sref ; retirer trémie et parties < 1,80 m si besoin"),
-            "surface_pieces_etiquetees_totale_m2": val(round(sum(n["surface_pieces_etiquetees_m2"]["valeur"] for n in niv), 1),
-                                                       "lu", "Σ étiquettes de pièces", "haute", "m²"),
-            "plancher_bas_m2": val(niv[0]["surface_interieure_m2"]["valeur"], D, "surface intérieure du niveau bas", "moyenne", "m²"),
-            "plancher_haut_m2": val(niv[-1]["surface_interieure_m2"]["valeur"], S, "surface intérieure du dernier niveau", "faible", "m²"),
-            "baies_par_orientation_m2": baies_o,
-            "baies_total_m2": round(sum(baies_o.values()), 2),
-            "murs_par_orientation_m2": murs_o,
-            "ponts_thermiques": pt,
-        }
+def batiment(niv, hsp_v: dict, h_etage_v: dict | None = None) -> dict:
+    """Synthèse bâtiment. Hauteur des murs = hauteur d'étage (plancher à plancher) si elle est lue, sinon HSP."""
+    hsp = hsp_v["valeur"]
+    hm = h_etage_v["valeur"] if h_etage_v else hsp
+    nom_h = "hauteur d'étage" if h_etage_v else "HSP"
+    nb = len(niv)
+    pinter = [n["perimetre_interieur_m"]["valeur"] for n in niv]
+    toutes = [b for n in niv for b in n["baies"]]
+    baies_o: dict[str, float] = {}
+    for b in toutes:
+        o = b["orientation"] or b["facade"]
+        baies_o[o] = round(baies_o.get(o, 0) + b["surface_m2"]["valeur"], 2)
+    murs_o: dict[str, float] = {}
+    for n in niv:
+        for f in n["facades"]:
+            o = f.get("orientation", {}).get("valeur") or f["id"]
+            murs_o[o] = murs_o.get(o, 0) + f["longueur_int_m"]["valeur"] * hm
+    murs_o = {o: {"brut_m2": round(s, 1), "net_m2": round(s - baies_o.get(o, 0), 1)} for o, s in murs_o.items()}
+    larg = sum(b["largeur_m"]["valeur"] for b in toutes)
+    haut = sum(b["hauteur_m"]["valeur"] for b in toutes)
+    sal = sum(n["angles"]["saillants"] for n in niv)
+    ren = sum(n["angles"]["rentrants"] for n in niv)
+    nref = sum(n["refends_en_facade"]["valeur"] for n in niv)
+    D, S = "déduit", "supposé"
+    pt = {
+        "plancher_bas_mur_ml": val(round(pinter[0], 1), D, "périmètre intérieur du niveau bas", "moyenne", "m",
+                                   liaison="mur / plancher bas"),
+        "plancher_intermediaire_mur_ml": val(round(sum(pinter[1:]), 1), D, "périmètres intérieurs des niveaux supérieurs", "moyenne", "m",
+                                             liaison="mur / plancher intermédiaire"),
+        "plancher_haut_mur_ml": val(round(pinter[-1], 1), S, "périmètre du dernier niveau (toiture au-dessus supposée)", "faible", "m",
+                                    liaison="mur / plancher haut ou toiture"),
+        "refend_mur_ml": val(round(nref * hm, 1), D, f"{nref} jonction(s) x {nom_h}", "faible", "m", liaison="refend / mur"),
+        "angle_saillant_ml": val(round(sal * hm, 1), D, f"{sal} angle(s) x {nom_h}", "moyenne", "m", liaison="angle de mur saillant"),
+        "angle_rentrant_ml": val(round(ren * hm, 1), D, f"{ren} angle(s) x {nom_h}", "moyenne", "m", liaison="angle de mur rentrant"),
+        "menuiserie_appui_ml": val(round(larg, 1), D, "Σ largeurs des baies", "haute", "m", liaison="menuiserie / mur : appui"),
+        "menuiserie_linteau_ml": val(round(larg, 1), D, "Σ largeurs des baies", "haute", "m", liaison="menuiserie / mur : linteau"),
+        "menuiserie_tableaux_ml": val(round(2 * haut, 1), D, "Σ 2 x hauteurs des baies", "haute", "m", liaison="menuiserie / mur : tableaux"),
+    }
+    s_int = sum(n["surface_interieure_m2"]["valeur"] for n in niv)
+    out = {
+        "nombre_niveaux": val(nb, D, "vues en plan détectées", "haute"),
+        "hauteur_sous_plafond_m": hsp_v,
+        "surface_interieure_totale_m2": val(round(s_int, 1), D, "Σ surfaces intérieures", "moyenne", "m²",
+                                            note="proche de la Sref ; retirer trémie et parties < 1,80 m si besoin"),
+        "surface_pieces_etiquetees_totale_m2": val(round(sum(n["surface_pieces_etiquetees_m2"]["valeur"] for n in niv), 1),
+                                                   "lu", "Σ étiquettes de pièces", "haute", "m²"),
+        "plancher_bas_m2": val(niv[0]["surface_interieure_m2"]["valeur"], D, "surface intérieure du niveau bas", "moyenne", "m²"),
+        "plancher_haut_m2": val(niv[-1]["surface_interieure_m2"]["valeur"], S, "surface intérieure du dernier niveau", "faible", "m²"),
+        "baies_par_orientation_m2": baies_o,
+        "baies_total_m2": round(sum(baies_o.values()), 2),
+        "murs_par_orientation_m2": murs_o,
+        "ponts_thermiques": pt,
+    }
+    if h_etage_v:
+        out["hauteur_etage_m"] = h_etage_v
+    return out
 
 
 def _signe_coin(f1, f2, v) -> int:

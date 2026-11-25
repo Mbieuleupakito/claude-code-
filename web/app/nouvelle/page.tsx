@@ -8,7 +8,7 @@ import { api, type Config } from "@/lib/api";
 export default function NouvelleEtude() {
   const router = useRouter();
   const [config, setConfig] = useState<Config | null>(null);
-  const [fichier, setFichier] = useState<File | null>(null);
+  const [fichiers, setFichiers] = useState<File[]>([]);
   const [survol, setSurvol] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -18,21 +18,26 @@ export default function NouvelleEtude() {
     api.config().then(setConfig).catch((e) => setErreur(e.message));
   }, []);
 
-  function choisir(f: File | undefined) {
+  function choisir(liste: FileList | null | undefined) {
     setErreur(null);
-    if (!f) return;
-    const nom = f.name.toLowerCase();
-    if (nom.endsWith(".dwg")) return setErreur("Les fichiers DWG ne sont pas lus : demander un PDF vectoriel à l'architecte");
-    if (!nom.endsWith(".pdf")) return setErreur("Choisir un plan au format PDF vectoriel");
-    setFichier(f);
+    if (!liste?.length) return;
+    const ajout: File[] = [];
+    for (const f of Array.from(liste)) {
+      const nom = f.name.toLowerCase();
+      if (nom.endsWith(".dwg")) return setErreur("Les fichiers DWG ne sont pas lus : demander un PDF vectoriel à l'architecte");
+      if (!nom.endsWith(".pdf")) return setErreur(`« ${f.name} » n'est pas un PDF`);
+      ajout.push(f);
+    }
+    setFichiers((avant) => [...avant, ...ajout.filter((f) => !avant.some((a) => a.name === f.name && a.size === f.size))]);
   }
 
   async function envoyer(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
-    if (!fichier) return setErreur("Ajouter le plan PDF");
+    if (!fichiers.length) return setErreur("Ajouter au moins un PDF : plans, et si possible la notice thermique");
     const fd = new FormData(ev.currentTarget);
     for (const [k, v] of Array.from(fd.entries())) if (v === "") fd.delete(k);
-    fd.set("fichier", fichier);
+    fd.delete("fichiers");
+    for (const f of fichiers) fd.append("fichiers", f);
     setEnvoi(true);
     setErreur(null);
     try {
@@ -49,34 +54,34 @@ export default function NouvelleEtude() {
       <div className="entete">
         <div>
           <h1>Nouvelle étude</h1>
-          <p>Le plan est lu sur ce poste. Comptez quelques secondes pour la lecture et les calculs</p>
+          <p>Les documents sont lus sur ce poste. Comptez quelques secondes pour la lecture et les calculs</p>
         </div>
       </div>
 
       <form onSubmit={envoyer} className="pile">
         <section className="carte carte-corps pile" style={{ gap: 16 }}>
-          <h2>Plan de l'architecte</h2>
-          {fichier ? (
-            <div className="depot rempli">
+          <h2>Dossier du projet</h2>
+          <p className="second" style={{ marginTop: -8 }}>Plans, coupe, notice thermique, tableaux : tout est lu. Plus le dossier est complet, plus le résultat est précis</p>
+          {fichiers.map((f) => (
+            <div className="depot rempli" key={f.name + f.size}>
               <div>
-                <div>{fichier.name}</div>
-                <div className="muet mono">{(fichier.size / 1024).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} Ko</div>
+                <div>{f.name}</div>
+                <div className="muet mono">{(f.size / 1024).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} Ko</div>
               </div>
-              <button type="button" className="bouton discret" onClick={() => setFichier(null)} aria-label="Retirer le plan"><X strokeWidth={1.5} /></button>
+              <button type="button" className="bouton discret" onClick={() => setFichiers(fichiers.filter((x) => x !== f))} aria-label={`Retirer ${f.name}`}><X strokeWidth={1.5} /></button>
             </div>
-          ) : (
-            <div className={`depot${survol ? " survol" : ""}`} role="button" tabIndex={0}
-              onClick={() => entreeFichier.current?.click()}
-              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && entreeFichier.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setSurvol(true); }}
-              onDragLeave={() => setSurvol(false)}
-              onDrop={(e) => { e.preventDefault(); setSurvol(false); choisir(e.dataTransfer.files[0]); }}>
-              <FileUp strokeWidth={1.5} />
-              <strong>Déposer le plan PDF ici</strong>
-              <span className="muet">ou cliquer pour le choisir · PDF vectoriel, plans de niveaux avec étiquettes de baies</span>
-            </div>
-          )}
-          <input ref={entreeFichier} type="file" accept=".pdf,application/pdf" hidden onChange={(e) => choisir(e.target.files?.[0])} />
+          ))}
+          <div className={`depot${survol ? " survol" : ""}`} role="button" tabIndex={0}
+            onClick={() => entreeFichier.current?.click()}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && entreeFichier.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setSurvol(true); }}
+            onDragLeave={() => setSurvol(false)}
+            onDrop={(e) => { e.preventDefault(); setSurvol(false); choisir(e.dataTransfer.files); }}>
+            <FileUp strokeWidth={1.5} />
+            <strong>{fichiers.length ? "Ajouter d'autres PDF" : "Déposer les PDF ici"}</strong>
+            <span className="muet">ou cliquer pour les choisir · PDF vectoriels, un ou plusieurs fichiers</span>
+          </div>
+          <input ref={entreeFichier} type="file" accept=".pdf,application/pdf" multiple hidden onChange={(e) => { choisir(e.target.files); e.target.value = ""; }} />
         </section>
 
         <section className="carte carte-corps pile" style={{ gap: 16 }}>
@@ -88,33 +93,35 @@ export default function NouvelleEtude() {
             </div>
             <div className="champ">
               <label htmlFor="zone">Zone climatique</label>
-              <select id="zone" name="zone" className="entree" defaultValue="H1c" required>
-                {(config?.zones ?? ["H1c"]).map((z) => <option key={z}>{z}</option>)}
+              <select id="zone" name="zone" className="entree" defaultValue="">
+                <option value="">Lue dans la notice</option>
+                {(config?.zones ?? []).map((z) => <option key={z}>{z}</option>)}
               </select>
             </div>
             <div className="champ">
               <label htmlFor="altitude_m">Altitude (m)</label>
-              <input id="altitude_m" name="altitude_m" type="number" min={0} max={3000} defaultValue={200} className="entree" required />
+              <input id="altitude_m" name="altitude_m" type="number" min={0} max={3000} className="entree" placeholder="Lue dans la notice si vide" />
             </div>
             <div className="champ">
               <label htmlFor="date_pc">Date de dépôt du permis</label>
-              <input id="date_pc" name="date_pc" type="date" className="entree" required />
-              <span className="aide">Fixe les seuils applicables (décret 2026-200 à partir du 1er juillet 2026)</span>
+              <input id="date_pc" name="date_pc" type="date" className="entree" />
+              <span className="aide">Lue dans la notice si vide. Fixe les seuils (décret 2026-200 à partir du 1er juillet 2026)</span>
             </div>
             <div className="champ">
               <label htmlFor="sref">Sref (m²)</label>
-              <input id="sref" name="sref" type="number" step="0.1" min={10} className="entree" placeholder="Lue sur le plan si vide" />
+              <input id="sref" name="sref" type="number" step="0.1" min={10} className="entree" placeholder="Lue dans le dossier si vide" />
             </div>
             <div className="champ">
               <label htmlFor="systeme">Système de chauffage et ECS</label>
-              <select id="systeme" name="systeme" className="entree">
+              <select id="systeme" name="systeme" className="entree" defaultValue="">
+                <option value="">Lu dans la notice</option>
                 {(config?.systemes ?? []).map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="champ">
               <label htmlFor="hsp_m">Hauteur sous plafond (m)</label>
-              <input id="hsp_m" name="hsp_m" type="number" step="0.01" defaultValue={2.5} className="entree" />
-              <span className="aide">Rarement cotée sur le plan : à lire sur la coupe</span>
+              <input id="hsp_m" name="hsp_m" type="number" step="0.01" className="entree" placeholder="Lue sur la coupe si vide" />
+              <span className="aide">Sinon 2,50 m supposé</span>
             </div>
           </div>
 
@@ -127,19 +134,22 @@ export default function NouvelleEtude() {
               </div>
               <div className="champ">
                 <label htmlFor="structure">Structure des murs (ACV)</label>
-                <select id="structure" name="structure" className="entree">
+                <select id="structure" name="structure" className="entree" defaultValue="">
+                  <option value="">Lu dans la notice</option>
                   {Object.entries(config?.structures ?? {}).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div className="champ">
                 <label htmlFor="plancher">Plancher intermédiaire (ACV)</label>
-                <select id="plancher" name="plancher" className="entree">
+                <select id="plancher" name="plancher" className="entree" defaultValue="">
+                  <option value="">Lu dans la notice</option>
                   {Object.entries(config?.planchers ?? {}).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div className="champ">
                 <label htmlFor="menuiserie">Menuiseries (ACV)</label>
-                <select id="menuiserie" name="menuiserie" className="entree">
+                <select id="menuiserie" name="menuiserie" className="entree" defaultValue="">
+                  <option value="">Lu dans la notice</option>
                   {Object.entries(config?.menuiseries ?? {}).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
@@ -166,7 +176,7 @@ export default function NouvelleEtude() {
         </section>
 
         {erreur ? <div className="message erreur"><AlertCircle strokeWidth={1.5} />{erreur}</div> : null}
-        {envoi ? <div className="message info"><Loader2 strokeWidth={1.5} />Lecture du plan, estimation et ACV en cours</div> : null}
+        {envoi ? <div className="message info"><Loader2 strokeWidth={1.5} />Lecture du dossier, estimation et ACV en cours</div> : null}
 
         <div style={{ display: "flex", gap: 8 }}>
           <button className="bouton principal" type="submit" disabled={envoi}>Lancer l'étude</button>

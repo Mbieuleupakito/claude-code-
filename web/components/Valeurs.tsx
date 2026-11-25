@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, CircleHelp, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleHelp, Info, XCircle } from "lucide-react";
 import type { Tag, Valeur, Verdict as TVerdict, VerdictIc } from "@/lib/api";
 import { nombre } from "@/lib/format";
 
@@ -46,6 +46,7 @@ const VERDICTS: Record<string, { classe: string; Icone: typeof CheckCircle2; tex
   incertain: { classe: "attention", Icone: AlertTriangle, texte: "Incertain" },
   "non conforme probable": { classe: "critique", Icone: XCircle, texte: "Non conforme probable" },
   "au-dessus du seuil": { classe: "critique", Icone: XCircle, texte: "Au-dessus du seuil" },
+  "hors périmètre (tertiaire)": { classe: "attention", Icone: Info, texte: "Hors périmètre (tertiaire)" },
 };
 
 export function Verdict({ v }: { v: TVerdict | VerdictIc | string }) {

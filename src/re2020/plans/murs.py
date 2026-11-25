@@ -86,23 +86,44 @@ def _sous_chemins(curve):
     return out
 
 
-def formes_remplies(page) -> list[tuple[Polygon, tuple]]:
+def _polygones_remplis(page):
+    """Toutes les formes remplies (rectangles et chemins) : [(polygone, couleur, claire ?)]."""
     out = []
     for r in page.rects:
-        if r.get("fill") and not _clair(couleur(r)) and r["width"] > 0 and r["height"] > 0:
-            out.append((box(r["x0"], r["top"], r["x1"], r["bottom"]), couleur(r)))
-    for c in page.curves:
-        if not c.get("fill") or _clair(couleur(c)):
+        if r.get("fill") and r["width"] > 0 and r["height"] > 0:
+            c = couleur(r)
+            out.append((box(r["x0"], r["top"], r["x1"], r["bottom"]), c, _clair(c)))
+    for cv in page.curves:
+        if not cv.get("fill"):
             continue
+        c = couleur(cv)
         geom = None
-        for sp in _sous_chemins(c):
+        for sp in _sous_chemins(cv):
             pg = Polygon(sp).buffer(0)
             if pg.is_empty:
                 continue
             geom = pg if geom is None else geom.symmetric_difference(pg)  # règle pair-impair
         for pg in polygones(geom) if geom is not None else []:
             if pg.area > 0:
-                out.append((pg, couleur(c)))
+                out.append((pg, c, _clair(c)))
+    return out
+
+
+def formes_remplies(page) -> list[tuple[Polygon, tuple]]:
+    """Formes remplies foncées, « peintes » : une forme claire posée DANS une forme foncée la recouvre
+    (sinon elle serait invisible). Ex. : grand aplat bleu + intérieur blanc = anneau de murs."""
+    toutes = _polygones_remplis(page)
+    claires = [pg for pg, _, clair in toutes if clair]
+    out = []
+    for pg, c, clair in toutes:
+        if clair:
+            continue
+        dedans = [cl for cl in claires if cl.area < pg.area * 0.999 and cl.within(pg.buffer(0.5))]
+        if dedans:
+            pg = pg.difference(unary_union(dedans))
+        for morceau in polygones(pg):
+            if morceau.area > 0:
+                out.append((morceau, c))
     return out
 
 
@@ -139,6 +160,7 @@ class Facade:
     ext_pt: float = 0.0
     int_pt: float = 0.0
     ouvertures: list = field(default_factory=list)  # [(a, b)] le long de p → q, en pt
+    marqueurs: list = field(default_factory=list)   # [(a, b, couleur)] baies dessinées en aplat de couleur
     couverture: float = 1.0
 
     def local(self, x, y):
@@ -344,3 +366,41 @@ def _refends(vue: Vue, k, ep_min_m=0.12) -> int:
         contact = m.buffer(0.05 / k).intersection(ceinture)
         n += len(polygones(contact))
     return n
+
+
+def couleur_murs(vue: Vue, formes) -> tuple | None:
+    """Couleur dominante (en surface) des murs de la vue."""
+    aires = Counter()
+    for pg, c in formes:
+        inter = pg.intersection(vue.enveloppe)
+        if not inter.is_empty:
+            aires[c] += inter.area
+    return aires.most_common(1)[0][0] if aires else None
+
+
+def marqueurs_ouvertures(vue: Vue, formes, k, couleur_mur) -> None:
+    """Baies dessinées comme des aplats de couleur posés SUR le mur (au lieu d'un trou) : chaque aplat
+    d'une autre couleur que le mur, qui traverse l'épaisseur du mur, devient une ouverture de la façade."""
+    for pg, c in formes:
+        if c == couleur_mur:
+            continue
+        x0, y0, x1, y1 = pg.bounds
+        if max(x1 - x0, y1 - y0) * k > 6 or not pg.intersects(vue.enveloppe):
+            continue
+        meilleur = None
+        for f in vue.facades:
+            pts = [f.local(x, y) for x, y in ((x0, y0), (x1, y0), (x0, y1), (x1, y1))]
+            a0, a1 = min(p[0] for p in pts), max(p[0] for p in pts)
+            d0, d1 = min(p[1] for p in pts), max(p[1] for p in pts)
+            ep = f.ep_pt or 0.2 / k
+            if a1 < 0 or a0 > f.longueur_pt or d0 < -ep - 2 or d1 > ep + 2:
+                continue
+            if (min(d1, 0.5) - max(d0, -ep)) < 0.5 * ep:  # ne traverse pas le mur
+                continue
+            recouvrement = min(a1, f.longueur_pt) - max(a0, 0)
+            if meilleur is None or recouvrement > meilleur[0]:
+                meilleur = (recouvrement, f, max(a0, 0), min(a1, f.longueur_pt))
+        if meilleur and meilleur[0] * k >= 0.25:
+            _, f, a0, a1 = meilleur
+            f.marqueurs.append((a0, a1, c))
+            f.ouvertures = [tuple(g) for g in fusion(list(f.ouvertures) + [(a0, a1)], tol=0.0)]

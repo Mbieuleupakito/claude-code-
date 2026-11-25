@@ -2,46 +2,616 @@
  "source": "Ordres de grandeur pour pré-dimensionner l'ACV (kg éq. CO2 par unité fonctionnelle, ACV dynamique 50 ans)",
  "avertissement": "VALEURS SUPPOSÉES, non issues d'INIES : à remplacer par les fiches réelles (export INIES / Pléiades → CSV, voir re2020.acv.catalogue.importer_csv). 'defaut' = donnée environnementale par défaut (DED, majorée) ; 'specifique' = FDES/PEP typique à rechercher.",
  "lots": {
-  "1": "VRD", "2": "Fondations et infrastructure", "3": "Superstructure, maçonnerie", "4": "Couverture, étanchéité, charpente",
-  "5": "Cloisons, doublages, plafonds, menuiseries intérieures", "6": "Façades et menuiseries extérieures", "7": "Revêtements sols, murs, plafonds",
-  "8": "CVC", "9": "Installations sanitaires", "10": "Réseaux d'énergie (courant fort)", "11": "Réseaux de communication (courant faible)",
-  "12": "Appareils élévateurs", "13": "Production locale d'énergie"
+  "1": "VRD",
+  "2": "Fondations et infrastructure",
+  "3": "Superstructure, maçonnerie",
+  "4": "Couverture, étanchéité, charpente",
+  "5": "Cloisons, doublages, plafonds, menuiseries intérieures",
+  "6": "Façades et menuiseries extérieures",
+  "7": "Revêtements sols, murs, plafonds",
+  "8": "CVC",
+  "9": "Installations sanitaires",
+  "10": "Réseaux d'énergie (courant fort)",
+  "11": "Réseaux de communication (courant faible)",
+  "12": "Appareils élévateurs",
+  "13": "Production locale d'énergie"
  },
  "ic_chantier_kg_m2": 30,
  "elements": [
-  {"id": "vrd_forfait", "lot": 1, "libelle": "VRD maison individuelle", "uf": "m² Sref", "defaut": {"type": "forfait", "ic": 18}, "specifique": null},
-  {"id": "semelle_filante", "lot": 2, "libelle": "Semelles filantes béton armé", "uf": "ml", "defaut": {"type": "DED", "ic": 120}, "specifique": {"type": "FDES collective", "nom": "Fondation filante béton armé", "ic": 75}},
-  {"id": "dallage", "lot": 2, "libelle": "Dallage béton sur terre-plein", "uf": "m²", "defaut": {"type": "DED", "ic": 90}, "specifique": {"type": "FDES collective", "nom": "Dallage béton armé", "ic": 55}},
-  {"id": "isolant_sous_dallage", "lot": 2, "libelle": "Isolant sous dallage (PSE)", "uf": "m²", "defaut": {"type": "DED", "ic": 25}, "specifique": {"type": "FDES individuelle", "nom": "Panneau PSE sous chape/dallage", "ic": 12}},
-  {"id": "mur_parpaing", "lot": 3, "libelle": "Mur en blocs béton 20 cm", "uf": "m²", "defaut": {"type": "DED", "ic": 60}, "specifique": {"type": "FDES collective", "nom": "Mur en blocs béton creux", "ic": 35}},
-  {"id": "mur_brique", "lot": 3, "libelle": "Mur en brique terre cuite", "uf": "m²", "defaut": {"type": "DED", "ic": 70}, "specifique": {"type": "FDES collective", "nom": "Mur en briques de terre cuite", "ic": 40}},
-  {"id": "mur_beton", "lot": 3, "libelle": "Voile béton banché 20 cm", "uf": "m²", "defaut": {"type": "DED", "ic": 110}, "specifique": {"type": "FDES collective", "nom": "Voile béton armé", "ic": 75}},
-  {"id": "mur_ossature_bois", "lot": 3, "libelle": "Mur à ossature bois", "uf": "m²", "defaut": {"type": "DED", "ic": 40}, "specifique": {"type": "FDES collective", "nom": "Mur à ossature bois", "ic": 15}},
-  {"id": "plancher_hourdis", "lot": 3, "libelle": "Plancher poutrelles-hourdis béton", "uf": "m²", "defaut": {"type": "DED", "ic": 110}, "specifique": {"type": "FDES collective", "nom": "Plancher poutrelles et entrevous béton", "ic": 70}},
-  {"id": "plancher_bois", "lot": 3, "libelle": "Plancher bois", "uf": "m²", "defaut": {"type": "DED", "ic": 45}, "specifique": {"type": "FDES collective", "nom": "Plancher à solives bois", "ic": 20}},
-  {"id": "charpente_fermettes", "lot": 4, "libelle": "Charpente bois (fermettes)", "uf": "m² toiture", "defaut": {"type": "DED", "ic": 30}, "specifique": {"type": "FDES collective", "nom": "Charpente industrialisée bois", "ic": 12}},
-  {"id": "couverture_tuiles", "lot": 4, "libelle": "Couverture tuiles", "uf": "m² toiture", "defaut": {"type": "DED", "ic": 35}, "specifique": {"type": "FDES collective", "nom": "Couverture en tuiles", "ic": 20}},
-  {"id": "isolation_combles", "lot": 4, "libelle": "Isolation des combles (laine minérale)", "uf": "m²", "defaut": {"type": "DED", "ic": 15}, "specifique": {"type": "FDES individuelle", "nom": "Laine minérale soufflée/rouleau", "ic": 6}},
-  {"id": "cloison_placo", "lot": 5, "libelle": "Cloisons plaques de plâtre", "uf": "m²", "defaut": {"type": "DED", "ic": 25}, "specifique": {"type": "FDES individuelle", "nom": "Cloison distributive plaques de plâtre", "ic": 12}},
-  {"id": "doublage", "lot": 5, "libelle": "Doublage des murs extérieurs", "uf": "m²", "defaut": {"type": "DED", "ic": 20}, "specifique": {"type": "FDES individuelle", "nom": "Complexe de doublage", "ic": 10}},
-  {"id": "plafond_placo", "lot": 5, "libelle": "Plafond plaques de plâtre", "uf": "m²", "defaut": {"type": "DED", "ic": 15}, "specifique": {"type": "FDES individuelle", "nom": "Plafond plaques de plâtre sur ossature", "ic": 8}},
-  {"id": "porte_interieure", "lot": 5, "libelle": "Portes intérieures", "uf": "u", "defaut": {"type": "DED", "ic": 60}, "specifique": {"type": "FDES collective", "nom": "Bloc-porte intérieur", "ic": 35}},
-  {"id": "ite_isolant", "lot": 6, "libelle": "Isolant d'ITE", "uf": "m²", "defaut": {"type": "DED", "ic": 50}, "specifique": {"type": "FDES individuelle", "nom": "Système ITE sous enduit", "ic": 25}},
-  {"id": "enduit_facade", "lot": 6, "libelle": "Enduit de façade", "uf": "m²", "defaut": {"type": "DED", "ic": 15}, "specifique": {"type": "FDES collective", "nom": "Enduit monocouche", "ic": 8}},
-  {"id": "menuiserie_pvc", "lot": 6, "libelle": "Fenêtres PVC double vitrage", "uf": "m²", "defaut": {"type": "DED", "ic": 180}, "specifique": {"type": "FDES collective", "nom": "Fenêtre PVC double vitrage", "ic": 110}},
-  {"id": "menuiserie_alu", "lot": 6, "libelle": "Fenêtres aluminium double vitrage", "uf": "m²", "defaut": {"type": "DED", "ic": 260}, "specifique": {"type": "FDES collective", "nom": "Fenêtre aluminium double vitrage", "ic": 170}},
-  {"id": "porte_entree", "lot": 6, "libelle": "Porte d'entrée", "uf": "u", "defaut": {"type": "DED", "ic": 300}, "specifique": {"type": "FDES collective", "nom": "Porte d'entrée", "ic": 180}},
-  {"id": "carrelage", "lot": 7, "libelle": "Revêtement de sol (carrelage)", "uf": "m²", "defaut": {"type": "DED", "ic": 35}, "specifique": {"type": "FDES collective", "nom": "Carrelage céramique collé", "ic": 18}},
-  {"id": "peinture", "lot": 7, "libelle": "Peinture murs et plafonds", "uf": "m²", "defaut": {"type": "DED", "ic": 3}, "specifique": {"type": "FDES collective", "nom": "Peinture intérieure", "ic": 1.5}},
-  {"id": "pac_air_eau", "lot": 8, "libelle": "PAC air/eau", "uf": "u", "defaut": {"type": "DED", "ic": 2000}, "specifique": {"type": "PEP", "nom": "PAC air/eau 6-8 kW", "ic": 1300}},
-  {"id": "cet", "lot": 8, "libelle": "Chauffe-eau thermodynamique", "uf": "u", "defaut": {"type": "DED", "ic": 700}, "specifique": {"type": "PEP", "nom": "Chauffe-eau thermodynamique 200 l", "ic": 450}},
-  {"id": "poele_granules", "lot": 8, "libelle": "Poêle à granulés", "uf": "u", "defaut": {"type": "DED", "ic": 900}, "specifique": {"type": "PEP", "nom": "Poêle à granulés", "ic": 600}},
-  {"id": "radiateur_elec", "lot": 8, "libelle": "Radiateurs électriques", "uf": "u", "defaut": {"type": "DED", "ic": 150}, "specifique": {"type": "PEP", "nom": "Radiateur électrique", "ic": 90}},
-  {"id": "plancher_chauffant", "lot": 8, "libelle": "Plancher chauffant hydraulique", "uf": "m²", "defaut": {"type": "DED", "ic": 20}, "specifique": {"type": "PEP", "nom": "Plancher chauffant hydraulique", "ic": 10}},
-  {"id": "vmc_sf", "lot": 8, "libelle": "VMC simple flux hygro (caisson + bouches)", "uf": "u", "defaut": {"type": "DED", "ic": 300}, "specifique": {"type": "PEP", "nom": "VMC simple flux hygroréglable", "ic": 150}},
-  {"id": "reseaux_cvc", "lot": 8, "libelle": "Réseaux CVC (forfait)", "uf": "m² Sref", "defaut": {"type": "forfait", "ic": 5}, "specifique": null},
-  {"id": "sanitaires", "lot": 9, "libelle": "Installations sanitaires (forfait logement)", "uf": "logement", "defaut": {"type": "forfait", "ic": 900}, "specifique": null},
-  {"id": "courant_fort", "lot": 10, "libelle": "Électricité courant fort (forfait)", "uf": "m² Sref", "defaut": {"type": "forfait", "ic": 12}, "specifique": null},
-  {"id": "courant_faible", "lot": 11, "libelle": "Courant faible (forfait)", "uf": "m² Sref", "defaut": {"type": "forfait", "ic": 2}, "specifique": null}
+  {
+   "id": "vrd_forfait",
+   "lot": 1,
+   "libelle": "VRD maison individuelle",
+   "uf": "m² Sref",
+   "defaut": {
+    "type": "forfait",
+    "ic": 18
+   },
+   "specifique": null
+  },
+  {
+   "id": "semelle_filante",
+   "lot": 2,
+   "libelle": "Semelles filantes béton armé",
+   "uf": "ml",
+   "defaut": {
+    "type": "DED",
+    "ic": 120
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Fondation filante béton armé",
+    "ic": 75
+   }
+  },
+  {
+   "id": "dallage",
+   "lot": 2,
+   "libelle": "Dallage béton sur terre-plein",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 90
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Dallage béton armé",
+    "ic": 55
+   }
+  },
+  {
+   "id": "isolant_sous_dallage",
+   "lot": 2,
+   "libelle": "Isolant sous dallage (PSE)",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 25
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Panneau PSE sous chape/dallage",
+    "ic": 12
+   }
+  },
+  {
+   "id": "mur_parpaing",
+   "lot": 3,
+   "libelle": "Mur en blocs béton 20 cm",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 60
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Mur en blocs béton creux",
+    "ic": 35
+   }
+  },
+  {
+   "id": "mur_brique",
+   "lot": 3,
+   "libelle": "Mur en brique terre cuite",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 70
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Mur en briques de terre cuite",
+    "ic": 40
+   }
+  },
+  {
+   "id": "mur_beton",
+   "lot": 3,
+   "libelle": "Voile béton banché 20 cm",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 110
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Voile béton armé",
+    "ic": 75
+   }
+  },
+  {
+   "id": "mur_ossature_bois",
+   "lot": 3,
+   "libelle": "Mur à ossature bois",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 40
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Mur à ossature bois",
+    "ic": 15
+   }
+  },
+  {
+   "id": "plancher_hourdis",
+   "lot": 3,
+   "libelle": "Plancher poutrelles-hourdis béton",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 110
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Plancher poutrelles et entrevous béton",
+    "ic": 70
+   }
+  },
+  {
+   "id": "plancher_bois",
+   "lot": 3,
+   "libelle": "Plancher bois",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 45
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Plancher à solives bois",
+    "ic": 20
+   }
+  },
+  {
+   "id": "charpente_fermettes",
+   "lot": 4,
+   "libelle": "Charpente bois (fermettes)",
+   "uf": "m² toiture",
+   "defaut": {
+    "type": "DED",
+    "ic": 30
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Charpente industrialisée bois",
+    "ic": 12
+   }
+  },
+  {
+   "id": "couverture_tuiles",
+   "lot": 4,
+   "libelle": "Couverture tuiles",
+   "uf": "m² toiture",
+   "defaut": {
+    "type": "DED",
+    "ic": 35
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Couverture en tuiles",
+    "ic": 20
+   }
+  },
+  {
+   "id": "isolation_combles",
+   "lot": 4,
+   "libelle": "Isolation des combles (laine minérale)",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 15
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Laine minérale soufflée/rouleau",
+    "ic": 6
+   }
+  },
+  {
+   "id": "cloison_placo",
+   "lot": 5,
+   "libelle": "Cloisons plaques de plâtre",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 25
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Cloison distributive plaques de plâtre",
+    "ic": 12
+   }
+  },
+  {
+   "id": "doublage",
+   "lot": 5,
+   "libelle": "Doublage des murs extérieurs",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 20
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Complexe de doublage",
+    "ic": 10
+   }
+  },
+  {
+   "id": "plafond_placo",
+   "lot": 5,
+   "libelle": "Plafond plaques de plâtre",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 15
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Plafond plaques de plâtre sur ossature",
+    "ic": 8
+   }
+  },
+  {
+   "id": "porte_interieure",
+   "lot": 5,
+   "libelle": "Portes intérieures",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 60
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Bloc-porte intérieur",
+    "ic": 35
+   }
+  },
+  {
+   "id": "ite_isolant",
+   "lot": 6,
+   "libelle": "Isolant d'ITE",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 50
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Système ITE sous enduit",
+    "ic": 25
+   }
+  },
+  {
+   "id": "enduit_facade",
+   "lot": 6,
+   "libelle": "Enduit de façade",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 15
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Enduit monocouche",
+    "ic": 8
+   }
+  },
+  {
+   "id": "menuiserie_pvc",
+   "lot": 6,
+   "libelle": "Fenêtres PVC double vitrage",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 180
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Fenêtre PVC double vitrage",
+    "ic": 110
+   }
+  },
+  {
+   "id": "menuiserie_alu",
+   "lot": 6,
+   "libelle": "Fenêtres aluminium double vitrage",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 260
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Fenêtre aluminium double vitrage",
+    "ic": 170
+   }
+  },
+  {
+   "id": "porte_entree",
+   "lot": 6,
+   "libelle": "Porte d'entrée",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 300
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Porte d'entrée",
+    "ic": 180
+   }
+  },
+  {
+   "id": "carrelage",
+   "lot": 7,
+   "libelle": "Revêtement de sol (carrelage)",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 35
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Carrelage céramique collé",
+    "ic": 18
+   }
+  },
+  {
+   "id": "peinture",
+   "lot": 7,
+   "libelle": "Peinture murs et plafonds",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 3
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Peinture intérieure",
+    "ic": 1.5
+   }
+  },
+  {
+   "id": "pac_air_eau",
+   "lot": 8,
+   "libelle": "PAC air/eau",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 2000
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "PAC air/eau 6-8 kW",
+    "ic": 1300
+   }
+  },
+  {
+   "id": "cet",
+   "lot": 8,
+   "libelle": "Chauffe-eau thermodynamique",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 700
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Chauffe-eau thermodynamique 200 l",
+    "ic": 450
+   }
+  },
+  {
+   "id": "poele_granules",
+   "lot": 8,
+   "libelle": "Poêle à granulés",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 900
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Poêle à granulés",
+    "ic": 600
+   }
+  },
+  {
+   "id": "radiateur_elec",
+   "lot": 8,
+   "libelle": "Radiateurs électriques",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 150
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Radiateur électrique",
+    "ic": 90
+   }
+  },
+  {
+   "id": "plancher_chauffant",
+   "lot": 8,
+   "libelle": "Plancher chauffant hydraulique",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 20
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Plancher chauffant hydraulique",
+    "ic": 10
+   }
+  },
+  {
+   "id": "vmc_sf",
+   "lot": 8,
+   "libelle": "VMC simple flux hygro (caisson + bouches)",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 300
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "VMC simple flux hygroréglable",
+    "ic": 150
+   }
+  },
+  {
+   "id": "reseaux_cvc",
+   "lot": 8,
+   "libelle": "Réseaux CVC (forfait)",
+   "uf": "m² Sref",
+   "defaut": {
+    "type": "forfait",
+    "ic": 5
+   },
+   "specifique": null
+  },
+  {
+   "id": "sanitaires",
+   "lot": 9,
+   "libelle": "Installations sanitaires (forfait logement)",
+   "uf": "logement",
+   "defaut": {
+    "type": "forfait",
+    "ic": 900
+   },
+   "specifique": null
+  },
+  {
+   "id": "courant_fort",
+   "lot": 10,
+   "libelle": "Électricité courant fort (forfait)",
+   "uf": "m² Sref",
+   "defaut": {
+    "type": "forfait",
+    "ic": 12
+   },
+   "specifique": null
+  },
+  {
+   "id": "courant_faible",
+   "lot": 11,
+   "libelle": "Courant faible (forfait)",
+   "uf": "m² Sref",
+   "defaut": {
+    "type": "forfait",
+    "ic": 2
+   },
+   "specifique": null
+  },
+  {
+   "id": "dalle_beton_toiture",
+   "lot": 3,
+   "libelle": "Dalle béton de toiture-terrasse",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 110
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Dalle pleine béton armé",
+    "ic": 70
+   }
+  },
+  {
+   "id": "isolant_toiture_terrasse",
+   "lot": 4,
+   "libelle": "Isolant de toiture-terrasse",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 30
+   },
+   "specifique": {
+    "type": "FDES individuelle",
+    "nom": "Panneau isolant de toiture-terrasse",
+    "ic": 15
+   }
+  },
+  {
+   "id": "etancheite_toiture",
+   "lot": 4,
+   "libelle": "Étanchéité de toiture-terrasse",
+   "uf": "m²",
+   "defaut": {
+    "type": "DED",
+    "ic": 35
+   },
+   "specifique": {
+    "type": "FDES collective",
+    "nom": "Complexe d'étanchéité bitumineux",
+    "ic": 20
+   }
+  },
+  {
+   "id": "cta_double_flux",
+   "lot": 8,
+   "libelle": "Centrale double flux (CTA)",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 1500
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Centrale de traitement d'air double flux",
+    "ic": 1000
+   }
+  },
+  {
+   "id": "sous_station",
+   "lot": 8,
+   "libelle": "Sous-station de réseau de chaleur",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 1500
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Sous-station d'échange",
+    "ic": 900
+   }
+  },
+  {
+   "id": "radiateur_eau",
+   "lot": 8,
+   "libelle": "Radiateurs à eau chaude",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 120
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Radiateur acier à eau chaude",
+    "ic": 80
+   }
+  },
+  {
+   "id": "ballon_electrique",
+   "lot": 8,
+   "libelle": "Ballon d'eau chaude électrique",
+   "uf": "u",
+   "defaut": {
+    "type": "DED",
+    "ic": 400
+   },
+   "specifique": {
+    "type": "PEP",
+    "nom": "Chauffe-eau électrique",
+    "ic": 250
+   }
+  }
  ]
 }

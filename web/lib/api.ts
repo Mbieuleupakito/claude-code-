@@ -126,14 +126,30 @@ export interface ElementAcv {
   gain_kg_m2: number;
 }
 
+export interface Controle {
+  grandeur: string;
+  plan: number | null;
+  dossier: number | null;
+  unite: string;
+  ecart_pct: number | null;
+  statut: "ok" | "écart" | "absent";
+  detail?: string;
+}
+
 export interface Etude {
   id: string;
+  dossier?: Record<string, any>;
+  controles?: Controle[];
+  parametres_sources?: Record<string, Valeur<any>>;
+  usage?: Valeur<string> | null;
+  tertiaire?: boolean;
   liens: Liens;
   projet: string;
   date_rapport: string;
   parametres: Record<string, string | number | boolean | null>;
   plan: {
     source: string;
+    pages_plans?: string[];
     echelle: { denominateur: Valeur; m_par_pt: number };
     nord: Valeur<number | null> & { explication?: string };
     niveaux: Niveau[];

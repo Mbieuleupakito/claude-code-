@@ -112,3 +112,19 @@ def test_site_et_routes_du_site(client, plan_pdf):
     assert client.get(f"/api/etudes/{j['id']}").json()["liens"]["etude"].endswith(j["id"])
     assert client.delete(f"/api/etudes/{j['id']}").json() == {"supprime": j["id"]}
     assert client.get(f"/api/etudes/{j['id']}").status_code == 404
+
+
+def test_plusieurs_pdf_sans_saisie(client, tmp_path, plan_pdf):
+    from .plan_synthetique import generer_dossier_peint
+    d = tmp_path / "dossier.pdf"
+    generer_dossier_peint(d)
+    r = client.post("/api/etudes", files=[("fichiers", ("dossier.pdf", d.read_bytes(), "application/pdf")),
+                                          ("fichiers", ("autre.pdf", plan_pdf, "application/pdf"))],
+                    data={"projet": "Sans saisie"})
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["zone"] == "H2b" and j["controles"]["ok"] >= 4
+    e = client.get(j["liens"]["etude"]).json()
+    assert e["parametres_sources"]["date_pc"]["tag"] == "lu"
+    sans = client.post("/api/etudes", files={"fichiers": ("plan.pdf", plan_pdf, "application/pdf")}, data={})
+    assert sans.status_code == 422 and "Zone climatique" in sans.json()["detail"]

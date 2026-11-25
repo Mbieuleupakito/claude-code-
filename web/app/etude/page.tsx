@@ -1,12 +1,12 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, ChevronRight, Download, FileJson, Printer, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight, Download, FileJson, Printer, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { BarresH, BarresPaires, Jauge } from "@/components/Graphiques";
 import { LegendeProvenance, Pastille, V, Verdict } from "@/components/Valeurs";
-import { api, suppositions, type Etude } from "@/lib/api";
+import { api, suppositions, type Etude, type Valeur } from "@/lib/api";
 import { date, euros, libelle, nombre } from "@/lib/format";
 
 const NOMS_HYPOTHESES: Record<string, string> = {
@@ -31,7 +31,7 @@ const POSTES: Record<string, string> = {
 };
 
 const SECTIONS = [
-  ["synthese", "Synthèse"], ["plan", "Plan lu"], ["enveloppe", "Enveloppe"], ["ponts", "Ponts thermiques"],
+  ["synthese", "Synthèse"], ["dossier", "Dossier lu"], ["plan", "Plan lu"], ["enveloppe", "Enveloppe"], ["ponts", "Ponts thermiques"],
   ["propositions", "Propositions"], ["acv", "ACV"], ["hypotheses", "À valider"],
 ] as const;
 
@@ -105,10 +105,16 @@ function FicheEtude() {
               unite="kg/m²" verdict={acv.verdict.par_defaut}
               note={`Avec FDES sur 5 postes : ${nombre(acv.Ic_construction.top_fiches.valeur, 0)} · Ic énergie ${nombre(acv.Ic_energie.valeur, 0)} / ${nombre(acv.Ic_energie_max.valeur, 0)}`} />
           </div>
-          {s.approx ? (
+          {e.tertiaire ? (
+            <div className="note-approx"><AlertTriangle strokeWidth={1.5} />Usage « {String(e.usage?.valeur)} » : les seuils et le modèle de l'outil sont ceux de la maison individuelle. Les données lues (géométrie, parois, baies, ponts thermiques, systèmes) restent valables pour la saisie ; Bbio et Cep sont indicatifs, à calculer dans Pléiades.</div>
+          ) : null}
+          {s.approx && !e.tertiaire ? (
             <div className="note-approx"><AlertTriangle strokeWidth={1.5} />Seuils approchés : MbHSP et McHSP sont inconnus pour ce permis. Les lire dans Pléiades et les saisir dans les options avancées pour un seuil exact.</div>
           ) : null}
         </section>
+
+        {/* ------------------------------------------------ dossier lu */}
+        <SectionDossier e={e} />
 
         {/* ------------------------------------------------ plan */}
         <section id="plan" className="section">
@@ -365,5 +371,145 @@ function FicheEtude() {
         </section>
       </div>
     </>
+  );
+}
+
+
+const NOMS_INFOS: Record<string, string> = {
+  usage: "Usage", adresse: "Adresse", occupants: "Occupants", q4: "Perméabilité Q4Pa-surf", exposition_bruit: "Exposition au bruit",
+  emprise_m2: "Emprise au sol", production_locale: "Production locale",
+};
+
+function Ligne({ nom, v, decimales = 2 }: { nom: string; v?: Valeur<any> | null; decimales?: number }) {
+  if (!v) return null;
+  return <><dt>{nom}</dt><dd><V v={v} decimales={decimales} /></dd></>;
+}
+
+function SectionDossier({ e }: { e: Etude }) {
+  const d = e.dossier ?? {};
+  const ctrl = e.controles ?? [];
+  const src = e.parametres_sources ?? {};
+  if (!d.pages_lues?.length && !ctrl.length) {
+    return (
+      <section id="dossier" className="section">
+        <h2>Dossier lu</h2>
+        <div className="carte vide">Aucune notice ni tableau trouvé : ajouter la notice thermique au dossier rend le résultat plus précis</div>
+      </section>
+    );
+  }
+  const nOk = ctrl.filter((c) => c.statut === "ok").length;
+  return (
+    <section id="dossier" className="section">
+      <h2>Dossier lu</h2>
+      <p className="section-intro">
+        Données écrites dans le dossier (notice, tableaux, coupe), utilisées à la place des hypothèses. Pages exploitées : {d.pages_lues?.join(", ")}
+        {e.plan.pages_plans?.length ? ` · plans : ${e.plan.pages_plans.join(", ")}` : ""}.
+      </p>
+      <div className="pile">
+        {ctrl.length ? (
+          <div className="carte">
+            <div className="carte-tete">
+              <h3>Contrôles croisés : plan mesuré / dossier écrit</h3>
+              <p className="chiffres">{nOk} sur {ctrl.length} concordants</p>
+            </div>
+            <div className="tableau-conteneur">
+              <table>
+                <thead><tr><th>Grandeur</th><th className="n">Plan</th><th className="n">Dossier</th><th className="n">Écart</th><th>Statut</th></tr></thead>
+                <tbody>
+                  {ctrl.map((c) => (
+                    <tr key={c.grandeur}>
+                      <td>{c.grandeur}{c.detail ? <div className="muet" style={{ fontSize: 12 }}>{c.detail}</div> : null}</td>
+                      <td className="n chiffres">{c.plan === null ? "—" : `${nombre(c.plan, 2)} ${c.unite}`}</td>
+                      <td className="n chiffres">{c.dossier === null ? "—" : `${nombre(c.dossier, 2)} ${c.unite}`}</td>
+                      <td className="n chiffres">{c.ecart_pct === null ? "—" : Math.abs(c.ecart_pct) < 0.05 ? "0 %" : `${c.ecart_pct > 0 ? "+" : ""}${nombre(c.ecart_pct, 1)} %`}</td>
+                      <td>{c.statut === "ok"
+                        ? <span className="verdict bon"><CheckCircle2 strokeWidth={1.5} />Concordant</span>
+                        : <span className="verdict attention"><AlertTriangle strokeWidth={1.5} />{c.statut === "écart" ? "Écart" : "Absent"}</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="colonnes-2">
+          <div className="carte carte-corps">
+            <h3 style={{ marginBottom: 12 }}>Projet</h3>
+            <dl className="liste-def">
+              <Ligne nom="Zone climatique" v={src.zone} />
+              <Ligne nom="Altitude" v={src.altitude_m} decimales={0} />
+              <Ligne nom="Dépôt du permis" v={src.date_pc} />
+              {Object.entries(d.infos ?? {}).filter(([k]) => k in NOMS_INFOS).map(([k, v]) => <Ligne key={k} nom={NOMS_INFOS[k]} v={v as Valeur<any>} />)}
+              <Ligne nom="Sref" v={d.surfaces?.sref} decimales={1} />
+              <Ligne nom="Hauteur sous plafond" v={d.hauteurs?.hsp_m} />
+              <Ligne nom="Hauteur d'étage" v={d.hauteurs?.hauteur_etage_m} />
+            </dl>
+          </div>
+          <div className="carte carte-corps">
+            <h3 style={{ marginBottom: 12 }}>Systèmes</h3>
+            <dl className="liste-def">
+              <Ligne nom="Chauffage" v={d.chauffage?.generateur} />
+              <Ligne nom="Émetteurs" v={d.chauffage?.emetteurs} />
+              <Ligne nom="Régime" v={d.chauffage?.regime} />
+              <Ligne nom="ECS" v={d.ecs?.type} />
+              <Ligne nom="Volume ECS" v={d.ecs?.volume_l} decimales={0} />
+              <Ligne nom="Ventilation" v={d.ventilation?.type} />
+              <Ligne nom="Débit" v={d.ventilation?.debit_m3h} decimales={0} />
+              <Ligne nom="Rendement de l'échangeur" v={d.ventilation?.rendement} />
+              <Ligne nom="Puissance des ventilateurs" v={d.ventilation?.puissance_Wh_m3} />
+              <Ligne nom="Horaires" v={d.ventilation?.horaires} />
+              <Ligne nom="Éclairage" v={d.eclairage?.puissances_W_m2 ? { ...d.eclairage.puissances_W_m2, valeur: d.eclairage.puissances_W_m2.valeur.join(" / ") } : null} />
+            </dl>
+          </div>
+        </div>
+
+        {d.parois?.length ? (
+          <div className="carte">
+            <div className="carte-tete"><h3>Parois de la notice</h3><p>À créer dans la bibliothèque Pléiades</p></div>
+            <div className="tableau-conteneur">
+              <table>
+                <thead><tr><th>Réf.</th><th>Paroi</th><th className="n">Up</th><th>Composition</th></tr></thead>
+                <tbody>
+                  {d.parois.map((p: any) => (
+                    <tr key={p.ref}>
+                      <td className="rang">{p.ref}</td>
+                      <td>{p.designation}<div className="muet" style={{ fontSize: 12 }}>{libelle(p.type_paroi)}</div></td>
+                      <td className="n">{p.Up ? <V v={p.Up} /> : <span className="muet">sans objet</span>}</td>
+                      <td className="second" style={{ fontSize: 13 }}>
+                        {p.couches?.length ? p.couches.map((c: any) => `${c.materiau} ${nombre(c.epaisseur_mm, 0)} mm${c.lambda ? ` (λ ${nombre(c.lambda, 3)})` : ""}`).join(" · ") : p.composition}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+
+        {d.menuiseries?.length ? (
+          <div className="carte">
+            <div className="carte-tete"><h3>Menuiseries de la notice</h3></div>
+            <div className="tableau-conteneur">
+              <table>
+                <thead><tr><th>Repère</th><th>Désignation</th><th className="n">U</th><th className="n">g</th><th className="n">TL</th><th className="n">Quantité</th><th className="n">Surface</th></tr></thead>
+                <tbody>
+                  {d.menuiseries.map((m: any) => (
+                    <tr key={m.repere}>
+                      <td className="rang">{m.repere}</td><td>{m.designation}</td>
+                      <td className="n">{m.U ? <span className="valeur chiffres">{String(m.U.grandeur ?? "U")} {nombre(m.U.valeur, 2)}<Pastille tag={m.U.tag} source={m.U.source} /></span> : "—"}</td>
+                      <td className="n"><V v={m.g} /></td>
+                      <td className="n"><V v={m.TL} /></td>
+                      <td className="n"><V v={m.quantite} decimales={0} /></td>
+                      <td className="n"><V v={m.surface_m2} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }

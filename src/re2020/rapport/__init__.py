@@ -87,7 +87,7 @@ def generer_html(e: dict) -> str:
 
     # ---- synthèse
     H.append("<h2>Synthèse</h2>")
-    cls = {"conforme probable": "ok", "non conforme probable": "ko", "incertain": "moy"}
+    cls = {"conforme probable": "ok", "non conforme probable": "ko", "incertain": "moy", "hors périmètre (tertiaire)": "moy"}
     lignes = []
     for k, kmax, u in (("Bbio", "Bbio_max", "pts"), ("Cep", "Cep_max", "kWhep/m²"), ("Cep_nr", "Cep_nr_max", "kWhep/m²")):
         lignes.append([k, fv(est[k]), fv(s[kmax], u), f"<span class='{cls[e['verdict'][k]]}'>{e['verdict'][k]}</span>"])
@@ -98,6 +98,28 @@ def generer_html(e: dict) -> str:
     H.append(f"<p>Sref : {fv(e['_trace_sref'])} — Ic construction (DED) : {fv(a['Ic_construction']['par_defaut'])} / max "
              f"{fv(a['Ic_construction_max'])} — avec FDES prioritaires : {fv(a['Ic_construction']['top_fiches'])} — "
              f"Ic énergie : {fv(a['Ic_energie'])}</p>")
+
+    # ---- dossier lu et contrôles croisés
+    dos = e.get("dossier") or {}
+    if dos.get("pages_lues") or e.get("controles"):
+        H.append("<h2>Dossier lu et contrôles croisés</h2>")
+        if e.get("tertiaire"):
+            H.append(f"<p class='alerte'>Usage « {escape(str(e['usage']['valeur']))} » : seuils et modèle de l'outil = maison "
+                     "individuelle. Les données d'entrée ci-dessous restent valables ; Bbio/Cep à calculer dans Pléiades.</p>")
+        H.append(f"<p class='note'>Pages exploitées : {escape(', '.join(dos.get('pages_lues', [])))}"
+                 f" · plans : {escape(', '.join(plan.get('pages_plans', [])))}</p>")
+        src = e.get("parametres_sources", {})
+        H.append(table(["Donnée", "Valeur"], [["Zone climatique", fv(src.get("zone"))], ["Altitude", fv(src.get("altitude_m"), "m")],
+                                               ["Dépôt du permis", fv(src.get("date_pc"))]]
+                       + [[escape(k.replace("_", " ").capitalize()), fv(v)] for k, v in dos.get("infos", {}).items()
+                          if isinstance(v, dict) and k not in ("zone", "altitude_m", "date_pc", "residentiel")]))
+        if e.get("controles"):
+            H.append("<h3>Contrôles croisés : plan mesuré / dossier écrit</h3>" + table(
+                ["Grandeur", "Plan", "Dossier", "Écart", "Statut"],
+                [[escape(c["grandeur"]), f"{c['plan']:g} {escape(c['unite'])}" if c["plan"] is not None else "—",
+                  f"{c['dossier']:g} {escape(c['unite'])}" if c["dossier"] is not None else "—",
+                  f"{c['ecart_pct']:+.1f} %" if c["ecart_pct"] is not None else "—",
+                  f"<span class='{'ok' if c['statut'] == 'ok' else 'ko'}'>{escape(c['statut'])}</span>"] for c in e["controles"]]))
 
     # ---- 1. bibliothèque projet
     H.append("<h2>1. Bibliothèque projet</h2><p class='etape'>Pléiades › Bibliothèque › Parois / Menuiseries / Ponts thermiques</p>")
@@ -167,9 +189,10 @@ def generer_html(e: dict) -> str:
     H.append("<h2>8. RE2020 : météo, zonage, systèmes</h2><p class='etape'>Pléiades › RE2020</p>")
     H.append(table(["Donnée", "Valeur"], [
         ["Zone climatique / altitude", f"{escape(par['zone'])} / {par['altitude_m']:g} m <span class='tag lu'>lu</span>"],
+        ["Usage", fv(e.get("usage")) if e.get("usage") else "maison individuelle <span class='tag suppose'>supposé</span>"],
         ["Zonage", "1 bâtiment, 1 zone, 1 groupe (maison individuelle) <span class='tag suppose'>supposé</span>"],
         ["Génération (bâtiment)", fv(hyp["systeme"])],
-        ["Ventilation (groupe)", "simple flux hygroréglable B <span class='tag suppose'>supposé</span>"],
+        ["Ventilation (groupe)", fv(hyp["ventilation"]) if hyp.get("ventilation") else "simple flux hygroréglable B <span class='tag suppose'>supposé</span>"],
         ["Perméabilité Q4Pa-surf", fv(hyp["q4"])],
     ]))
 
@@ -195,7 +218,7 @@ def generer_html(e: dict) -> str:
     # ---- 11. ACV
     a = e["acv"]
     H.append("<h2>11. ACV</h2><p class='etape'>Pléiades › ACV : inventaire par lot, PCE, fiches</p>")
-    vcls = {"sous le seuil": "ok", "au-dessus du seuil": "ko", "incertain": "moy"}
+    vcls = {"sous le seuil": "ok", "au-dessus du seuil": "ko", "incertain": "moy", "hors périmètre (tertiaire)": "moy"}
     H.append(table(["Indicateur", "Estimation [fourchette]", "Seuil max", "Verdict"], [
         ["Ic construction — fiches par défaut (DED)", fv(a["Ic_construction"]["par_defaut"]), fv(a["Ic_construction_max"]),
          f"<span class='{vcls[a['verdict']['par_defaut']]}'>{a['verdict']['par_defaut']}</span>"],

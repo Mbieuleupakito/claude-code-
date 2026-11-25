@@ -124,42 +124,54 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
             "{{SYSTEMES}}", "".join(f"<option>{s['nom']}</option>" for s in catalogue.systemes()))
 
     @app.post("/api/etudes")
-    async def creer_etude(fichier: UploadFile = File(...), zone: str = Form(...), altitude_m: float = Form(...),
-                          date_pc: str = Form(...), projet: str = Form("Projet sans nom"), sref: float | None = Form(None),
-                          nb_logements: int = Form(1), hsp_m: float = Form(2.5), systeme: str | None = Form(None),
+    async def creer_etude(fichiers: list[UploadFile] = File(default=[]), fichier: UploadFile | None = File(None),
+                          zone: str | None = Form(None), altitude_m: float | None = Form(None),
+                          date_pc: str | None = Form(None), projet: str = Form("Projet sans nom"), sref: float | None = Form(None),
+                          nb_logements: int = Form(1), hsp_m: float | None = Form(None), systeme: str | None = Form(None),
                           mb_hsp: float | None = Form(None), mc_hsp: float | None = Form(None),
                           echelle: int | None = Form(None), angle_nord_deg: float | None = Form(None),
-                          structure: str = Form("parpaing"), plancher: str = Form("hourdis"), menuiserie: str = Form("pvc")):
-        nom = (fichier.filename or "plan").lower()
-        if nom.endswith(".dwg"):
-            raise HTTPException(415, "DWG non lu : fournir un PDF vectoriel (ou un DXF).")
-        if nom.endswith(".dxf"):
-            raise HTTPException(415, "DXF pas encore pris en charge : fournir un PDF vectoriel.")
-        contenu = await fichier.read()
-        if not contenu.startswith(b"%PDF"):
-            raise HTTPException(415, "Le fichier n'est pas un PDF.")
+                          structure: str | None = Form(None), plancher: str | None = Form(None), menuiserie: str | None = Form(None)):
+        envois = [f for f in ([fichier] if fichier else []) + list(fichiers) if f is not None]
+        if not envois:
+            raise HTTPException(422, "Ajouter au moins un PDF (plans, notice thermique…).")
+        contenus = []
+        for f in envois:
+            nom = (f.filename or "plan").lower()
+            if nom.endswith(".dwg"):
+                raise HTTPException(415, "DWG non lu : fournir un PDF vectoriel (ou un DXF).")
+            if nom.endswith(".dxf"):
+                raise HTTPException(415, "DXF pas encore pris en charge : fournir un PDF vectoriel.")
+            c = await f.read()
+            if not c.startswith(b"%PDF"):
+                raise HTTPException(415, f"« {f.filename} » n'est pas un PDF.")
+            contenus.append((f.filename or "plan.pdf", c))
         i = uuid.uuid4().hex[:12]
         d = racine / i
         d.mkdir()
-        (d / "plan.pdf").write_bytes(contenu)
-        p = Parametres(zone=zone, altitude_m=altitude_m, date_pc=date_pc, projet=projet, sref=sref or None,
-                       nb_logements=nb_logements, hsp_m=hsp_m, systeme=systeme or None, mb_hsp=mb_hsp, mc_hsp=mc_hsp,
-                       echelle=echelle or None, angle_nord_deg=angle_nord_deg, structure=structure, plancher=plancher,
-                       menuiserie=menuiserie)
-        ligne = [i, datetime.now().isoformat(timespec="seconds"), projet, fichier.filename, json.dumps(p.__dict__)]
+        chemins = []
+        for k, (nom, c) in enumerate(contenus):
+            ch = d / ("plan.pdf" if k == 0 else f"document_{k + 1}.pdf")
+            ch.write_bytes(c)
+            chemins.append(ch)
+        p = Parametres(zone=zone or None, altitude_m=altitude_m, date_pc=date_pc or None, projet=projet, sref=sref or None,
+                       nb_logements=nb_logements, hsp_m=hsp_m or None, systeme=systeme or None, mb_hsp=mb_hsp, mc_hsp=mc_hsp,
+                       echelle=echelle or None, angle_nord_deg=angle_nord_deg, structure=structure or None,
+                       plancher=plancher or None, menuiserie=menuiserie or None)
+        noms = " + ".join(n for n, _ in contenus)
+        ligne = [i, datetime.now().isoformat(timespec="seconds"), projet, noms, json.dumps(p.__dict__)]
         try:
-            e = realiser_etude(d / "plan.pdf", p, catalogue)
+            e = realiser_etude(chemins, p, catalogue)
         except (ValueError, KeyError) as exc:
             db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "erreur", str(exc), None))
             db.commit()
-            raise HTTPException(422, f"Plan non exploitable : {exc}")
+            raise HTTPException(422, f"Dossier non exploitable : {exc}")
         (d / "etude.json").write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
         (d / "feuille_de_route.html").write_text(generer_html(e), encoding="utf-8")
         try:
             generer_pdf(e, d / "feuille_de_route.pdf")
         except Exception:  # WeasyPrint sans ses bibliothèques système (souvent sous Windows) : HTML imprimable
             pass
-        image_controle(d / "plan.pdf", e["plan"], d / "controle.png")
+        image_controle(chemins, e["plan"], d / "controle.png")
         synthese = {"verdict": e["verdict"], "Bbio": e["estimation"]["Bbio"], "Cep": e["estimation"]["Cep"],
                     "Cep_nr": e["estimation"]["Cep_nr"], "seuils": {k: e["seuils"][k]["valeur"] for k in ("Bbio_max", "Cep_max", "Cep_nr_max")},
                     "seuils_approx": e["seuils"]["approx"], "alertes": e["alertes"],
@@ -167,7 +179,9 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
                             "Ic_construction_top_fiches": e["acv"]["Ic_construction"]["top_fiches"],
                             "Ic_construction_max": e["acv"]["Ic_construction_max"]["valeur"],
                             "Ic_energie": e["acv"]["Ic_energie"], "verdict": e["acv"]["verdict"]},
-                    "zone": e["parametres"]["zone"], "sref": e["entrees"]["sref"]}
+                    "zone": e["parametres"]["zone"], "sref": e["entrees"]["sref"],
+                    "controles": {"ok": sum(c["statut"] == "ok" for c in e["controles"]),
+                                  "ecarts": sum(c["statut"] == "écart" for c in e["controles"])}}
         db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "ok", None, json.dumps(synthese, ensure_ascii=False)))
         db.commit()
         return {"id": i, **synthese, "liens": liens(i)}

@@ -28,7 +28,10 @@ def resume(r: dict) -> str:
     L.append(f"Baies par orientation (m²) : {bat['baies_par_orientation_m2']} — total {bat['baies_total_m2']}")
     pt = bat["ponts_thermiques"]
     L.append("Ponts thermiques (ml) : " + " ; ".join(f"{v['liaison']} {v['valeur']}" for v in pt.values()))
-    L.append(f"Surface intérieure totale : {bat['surface_interieure_totale_m2']['valeur']} m² (HSP supposée {bat['hauteur_sous_plafond_m']['valeur']} m)")
+    h = bat["hauteur_sous_plafond_m"]
+    L.append(f"Surface intérieure totale : {bat['surface_interieure_totale_m2']['valeur']} m² (HSP {h['valeur']} m, {h['tag']})")
+    if r.get("pages_plans"):
+        L.append(f"Pages de plans utilisées : {', '.join(r['pages_plans'])}")
     if r["alertes"]:
         L.append("Alertes :")
         L += [f"  ⚠ {a}" for a in r["alertes"]]
@@ -37,16 +40,16 @@ def resume(r: dict) -> str:
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Extraction d'un plan PDF vectoriel → JSON tracé (RE2020 / Pléiades)")
-    ap.add_argument("pdf")
+    ap.add_argument("pdf", nargs="+", help="un ou plusieurs PDF (plans, coupe, notice…) : toutes les pages sont parcourues")
     ap.add_argument("-o", "--sortie", help="fichier JSON (défaut : <pdf>.json)")
     ap.add_argument("--controle", help="image PNG de contrôle (détections superposées au plan)")
-    ap.add_argument("--page", type=int, default=0)
-    ap.add_argument("--hsp", type=float, default=2.50, help="hauteur sous plafond supposée (m)")
+    ap.add_argument("--page", type=int, default=None, help="ne lire que cette page (0 = première)")
+    ap.add_argument("--hsp", type=float, default=None, help="hauteur sous plafond (m) si elle n'est pas lue")
     ap.add_argument("--echelle", type=int, help="dénominateur d'échelle si non lisible (ex. 100)")
     ap.add_argument("--nord", type=float, help="angle du nord / haut de feuille (°, positif vers la droite)")
     a = ap.parse_args(argv)
     r = extraire_plan(a.pdf, page=a.page, hsp_m=a.hsp, denominateur=a.echelle, angle_nord_deg=a.nord)
-    sortie = Path(a.sortie or Path(a.pdf).with_suffix(".json"))
+    sortie = Path(a.sortie or Path(a.pdf[0]).with_suffix(".json"))
     sortie.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
     if a.controle:
         image_controle(a.pdf, r, a.controle)

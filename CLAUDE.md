@@ -28,8 +28,16 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   rectangles ou polygones → vues → contour quelconque → façades, couche pleine, bandes hachurées ITE/ITI,
   ouvertures dans le mur ou l'isolant, angles, refends), `nord.py`, `extraction.py`, `controle.py`.
   CLI : `python -m re2020.plans plan.pdf --controle plan.png`.
-  Tests : plans synthétiques (rectangle ITE, L en ITI avec échelle fausse) + Domène M01 ; Charleville en attente du PDF.
+  Tests : plans synthétiques (rectangle ITE, L en ITI, dossier « peint » + notice) + Domène M01 + mini-projet bureaux
+  (`data/examples/mini_projet/`, 18 contrôles croisés concordants) ; Charleville en attente du PDF.
   Limites : murs dessinés en aplat (pas seulement en traits), HSP non lue (coupe), pas de DXF.
+- `src/re2020/documents/` (fait) : lecture de TOUT le dossier PDF (notice, tableaux, coupe…) : tableaux reconnus par
+  leurs en-têtes (infos projet, parois Up, menuiseries Uw/g/TL, Ψ·L, baies + allèges, locaux, bilan façades, Sref),
+  texte libre par section (ventilation, chauffage, ECS, éclairage, HSP). Valeurs « lu » avec page source. Remplacent
+  les hypothèses (`estimation/hypotheses.appliquer_dossier`). `etude.controles_croises` compare plan mesuré / dossier écrit.
+  Plans : PDF multi-pages (pages de plans trouvées seules), murs « peints » (aplat + intérieur blanc), baies en aplats
+  de couleur typées par la légende, échelle calée sur les cotes écrites, « NORD ↑ » écrit, hauteurs lues.
+  Usage tertiaire détecté → verdicts « hors périmètre » (seuils et modèle = maison individuelle).
 - `src/re2020/catalogues/` (fait) : JSON de `data/catalogues` → SQLite ; U multicouche (± 3 % des Up Pléiades),
   recherche par type de paroi / U cible / matériau, épaisseur pour un U cible, λ +15 % si non certifié, Ψ ITE/ITI.
 - `src/re2020/estimation/` (fait) : modèle saisonnier calé sur le RSET Charleville (`data/references/charleville_calage.json`),

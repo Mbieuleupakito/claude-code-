@@ -125,14 +125,19 @@ def lire_echelles(phrases: list[Phrase], fenetre_pt: float = 80.0) -> list[tuple
 # --------------------------------------------------------------------------- niveaux
 
 RE_NIVEAU = re.compile(
-    r"\b(R\s?\+\s?\d+|R\s?-\s?\d+|R\.?D\.?C\.?|rez[- ]de[- ]chauss[ée]e|[ée]tage\s*\d*|combles?|sous[- ]sol)\b", re.I)
+    r"(?<![\w'’])(R\s?\+\s?\d+|R\s?-\s?\d+|R\.?D\.?C\.?|rez[- ]de[- ]chauss[ée]e|(?:1er|1e|\d+e|premier|second|deuxi[eè]me)\s+[ée]tage"
+    r"|(?<!d['’])[ée]tage\s+\d+(?![,.]\d)|combles?|sous[- ]sol)\b", re.I)
 
 
 def normaliser_niveau(txt: str) -> str:
     t = re.sub(r"\s", "", txt).upper().replace(".", "")
     if t in ("R+0", "RDC") or t.startswith("REZ"):
         return "RDC"
-    if t.startswith("ETAGE") or t.startswith("ÉTAGE"):
+    if "ETAGE" in t or "ÉTAGE" in t:
+        if t.startswith(("1ER", "1E", "PREMIER")):
+            return "R+1"
+        if t.startswith(("SECOND", "DEUXI")):
+            return "R+2"
         n = re.sub(r"\D", "", t)
         return f"R+{n or 1}"
     if t.startswith("SOUS"):
@@ -170,6 +175,10 @@ class EtiquetteBaie:
     y: float
     sens: str
     complement: str  # texte additionnel lu (ex. « PV », « bso »)
+    tag_l: str = "lu"
+    src_l: str = "étiquette (cm)"
+    tag_h: str = "lu"
+    src_h: str = "étiquette (cm)"
 
 
 def _voisine(base: Phrase, phrases: list[Phrase], dv_min: float, dv_max: float, du_max: float, cond) -> Phrase | None:
@@ -217,3 +226,82 @@ def lire_pieces(phrases: list[Phrase]) -> list[dict]:
         nom = _voisine(p, phrases, -2.6 * h, -0.4 * h, 30, lambda q: not RE_SURFACE.match(q.texte) and not RE_DIMS.search(q.texte))
         out.append({"nom": nom.texte if nom else None, "surface_m2": float(m.group(1).replace(",", ".")), "x": p.cx, "y": p.cy})
     return out
+
+
+# --------------------------------------------------------------------------- légende, dimensions par type, hauteurs, nord écrit
+
+import unicodedata as _ud
+
+
+def sans_accents(t: str) -> str:
+    return _ud.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
+
+
+def _nb(t: str) -> float:
+    return float(t.replace(",", "."))
+
+
+def lire_legende(phrases: list[Phrase], pastilles: list[tuple[tuple, tuple]]) -> dict:
+    """Légende couleur → texte : petites pastilles colorées suivies d'un libellé sur la même ligne.
+    ``pastilles`` : [((x0, top, x1, bottom), couleur)]."""
+    out = {}
+    for (x0, t, x1, b), c in pastilles:
+        cy = (t + b) / 2
+        cand = [p for p in phrases if p.sens == "ltr" and abs(p.cy - cy) < 6 and 0 <= p.x0 - x1 < 30]
+        if cand:
+            p = min(cand, key=lambda p: p.x0 - x1)
+            out.setdefault(c, p.texte.strip())
+    return out
+
+
+RE_TYPE_DIMS = re.compile(r"([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\- ]{2,40}?)\s*:?\s*(\d+[.,]\d+)\s*[×x]\s*(\d+[.,]\d+)\s*m\b")
+
+
+def lire_dimensions_types(texte: str) -> list[dict]:
+    """« fenêtres 1,23 × 1,48 m, porte vitrée 1,80 × 2,20 m » → [{nom, largeur, hauteur}]."""
+    out = []
+    for m in RE_TYPE_DIMS.finditer(texte):
+        mots = re.split(r"[:,;·]", m.group(1))[-1].strip()
+        out.append({"nom": mots, "largeur_m": _nb(m.group(2)), "hauteur_m": _nb(m.group(3))})
+    return out
+
+
+def correspond(libelle_legende: str, nom_type: str) -> bool:
+    """« Fenêtre F » ↔ « fenêtres » ; « Porte vitrée PV » ↔ « porte vitrée »."""
+    a = [w.rstrip("s") for w in re.findall(r"[a-z]{3,}", sans_accents(libelle_legende))]
+    b = [w.rstrip("s") for w in re.findall(r"[a-z]{3,}", sans_accents(nom_type))]
+    return bool(b) and all(w in a for w in b)
+
+
+RE_METRE = re.compile(r"(?<![\d,.])(\d{1,3}[.,]\d{1,2})\s*m(?![²2³3a-zA-Z])")
+
+
+def valeurs_metriques(texte: str) -> list[float]:
+    """Longueurs écrites en mètres (« 16,00 m », « 15,12 × 8,12 m »), sans les surfaces (m²)."""
+    vals = [_nb(x) for x in RE_METRE.findall(texte)]
+    for m in re.finditer(r"(\d{1,3}[.,]\d{1,2})\s*[×x]\s*(\d{1,3}[.,]\d{1,2})\s*m(?![²2])", texte):
+        vals += [_nb(m.group(1)), _nb(m.group(2))]
+    return sorted({v for v in vals if 0.3 <= v <= 200})
+
+
+RE_H_ETAGE = re.compile(r"hauteur\s+d['’]\s*[ée]tage\s*:?\s*(\d+[.,]\d+)\s*m", re.I)
+RE_HSP = re.compile(r"(?:hauteur\s+sous\s+plafond|HSP)\s*:?\s*(\d+[.,]\d+)\s*m", re.I)
+
+
+def lire_hauteurs(texte: str) -> dict:
+    out = {}
+    if (m := RE_H_ETAGE.search(texte)):
+        out["hauteur_etage_m"] = _nb(m.group(1))
+    if (m := RE_HSP.search(texte)):
+        out["hsp_m"] = _nb(m.group(1))
+    return out
+
+
+FLECHES = {"↑": 0.0, "⬆": 0.0, "↗": 45.0, "→": 90.0, "➡": 90.0, "↘": 135.0, "↓": 180.0, "⬇": 180.0,
+           "↙": -135.0, "←": -90.0, "⬅": -90.0, "↖": -45.0}
+
+
+def lire_nord_texte(texte: str) -> float | None:
+    """« NORD ↑ » → 0° (nord vers le haut de la feuille)."""
+    m = re.search(r"\b(?:nord|N)\s*([↑⬆↗→➡↘↓⬇↙←⬅↖])", texte, re.I)
+    return FLECHES[m.group(1)] if m else None

@@ -8,7 +8,9 @@ Voir CLAUDE.md pour le projet. Tout tourne en local : les plans clients ne quitt
 3. Double-cliquer :
    - Windows : **`lancer.bat`** — Mac : **`lancer.command`** (Linux : `./lancer.command`).
    La première fois, il installe tout (quelques minutes). Ensuite le navigateur s'ouvre sur http://127.0.0.1:8000.
-4. Déposer le plan PDF, remplir zone / altitude / date de PC → **Lancer l'étude** → feuille de route, image de contrôle.
+4. Déposer **tout le dossier** (plans, coupe, notice thermique : un ou plusieurs PDF) → **Lancer l'étude**. Zone,
+   altitude, date de PC, Sref, parois, menuiseries, Ψ, ventilation, systèmes, hauteurs sont lus dans les documents
+   (les saisir seulement s'ils manquent). La fiche montre les **contrôles croisés** plan mesuré / dossier écrit.
    Les études restent listées dans « Mes études » (dossier `etudes/`).
 
 Depuis le **téléphone** (même wifi que le PC) : `lancer_telephone.bat` (Windows) ou

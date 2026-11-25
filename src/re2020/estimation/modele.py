@@ -25,8 +25,8 @@ FS_BAIES = 0.65           # cadre + occultations + masques proches (supposé)
 INERTIE_KJ_K_M2 = 110.0   # inertie moyenne (supposé)
 PERM_FACTEUR = 0.823      # débit de perméabilité = facteur x Q4 x ATbât (lu : RSET Charleville 204,29 / (0,6 x 413,5))
 QV_M3H_M2 = 52.18 / 212.2  # simple flux hygro B, débit conventionnel par m² (lu : RSET Charleville)
-COEF_EP = {"electricite": 2.3, "bois": 1.0, "gaz": 1.0}
-COEF_EP_NR = {"electricite": 2.3, "bois": 0.0, "gaz": 1.0}
+COEF_EP = {"electricite": 2.3, "bois": 1.0, "gaz": 1.0, "reseau_chaleur": 1.0}
+COEF_EP_NR = {"electricite": 2.3, "bois": 0.0, "gaz": 1.0, "reseau_chaleur": 1.0}  # réseau : 1 - taux EnR (inconnu → 1)
 
 
 @dataclass
@@ -43,6 +43,7 @@ class Entrees:
     qv_m3h: float | None = None
     nb_logements: int = 1
     systeme: dict = field(default_factory=dict)
+    ecs_kwh_m2: float | None = None  # besoin ECS imposé (tertiaire) ; sinon loi logement
     # incertitudes relatives (demi-largeur) pour la fourchette
     incertitude: dict = field(default_factory=lambda: {"U": 0.10, "ponts": 0.25, "geometrie": 0.05, "apports": 0.15, "modele": 0.08})
 
@@ -96,8 +97,8 @@ def besoin_ecs_kwh(sref: float, nb_logements: int = 1) -> float:
 
 def consommations(e: Entrees, besoins: dict) -> dict:
     s = e.systeme or {"nom": "PAC air/eau double service", "energie": "electricite", "rendement_chauffage": 2.58, "rendement_ecs": 2.6}
-    ecs = besoin_ecs_kwh(e.sref, e.nb_logements) / e.sref
-    par_energie = {"electricite": 0.0, "bois": 0.0, "gaz": 0.0}
+    ecs = e.ecs_kwh_m2 if e.ecs_kwh_m2 is not None else besoin_ecs_kwh(e.sref, e.nb_logements) / e.sref
+    par_energie = {"electricite": 0.0, "bois": 0.0, "gaz": 0.0, "reseau_chaleur": 0.0}
     if s.get("energie") == "bois":
         pb = s.get("part_bois", 0.7)
         ch_bois = besoins["Bch"] * pb / s["rendement_chauffage_bois"]
@@ -109,7 +110,8 @@ def consommations(e: Entrees, besoins: dict) -> dict:
         ch = besoins["Bch"] / s["rendement_chauffage"]
         par_energie[s.get("energie", "electricite")] += ch
     ecs_ef = ecs / s["rendement_ecs"]
-    par_energie["electricite"] += ecs_ef + besoins["Becl"]
+    par_energie[s.get("energie_ecs", "electricite")] += ecs_ef
+    par_energie["electricite"] += besoins["Becl"]
     cep = sum(v * COEF_EP[k] for k, v in par_energie.items())
     cep_nr = sum(v * COEF_EP_NR[k] for k, v in par_energie.items())
     return {"chauffage": ch, "ecs": ecs_ef, "eclairage": besoins["Becl"], "par_energie": par_energie,

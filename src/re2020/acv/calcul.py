@@ -29,17 +29,29 @@ def ic_energie(conso: dict) -> dict:
     """Ic énergie (kg éq. CO2/m²) à partir des consommations estimées (kWhef/m².an)."""
     pe = conso["par_energie"]
     fe = FACTEURS_CO2["electricite"]
-    ch_elec = max(0.0, pe["electricite"] - conso["ecs"] - conso["eclairage"])
-    annuel = (ch_elec * fe["chauffage"] + conso["ecs"] * fe["ecs"] + conso["eclairage"] * fe["eclairage"]
+    ecs_elec = conso["ecs"] if pe.get("electricite", 0) >= conso["ecs"] + conso["eclairage"] - 1e-6 else 0.0
+    ch_elec = max(0.0, pe["electricite"] - ecs_elec - conso["eclairage"])
+    annuel = (ch_elec * fe["chauffage"] + ecs_elec * fe["ecs"] + conso["eclairage"] * fe["eclairage"]
               + pe.get("bois", 0.0) * FACTEURS_CO2["bois"] + pe.get("gaz", 0.0) * FACTEURS_CO2["gaz"])
+    reseau = pe.get("reseau_chaleur", 0.0) > 0
     return {"Ic_energie": val(round(DUREE_ANS * annuel, 1), "déduit",
-                              "consommations estimées x facteurs CO2 RE2020 x 50 ans", "moyenne", "kgéqCO2/m²"),
+                              "consommations estimées x facteurs CO2 RE2020 x 50 ans"
+                              + (" — SANS le réseau de chaleur (contenu CO2 à prendre dans la bibliothèque Pléiades)" if reseau else ""),
+                              "faible" if reseau else "moyenne", "kgéqCO2/m²", **({"partiel": True} if reseau else {})),
             "Ic_energie_max": val(IC_ENERGIE_MOY, "déduit", "seuil moyen maison individuelle (modulations non appliquées)",
                                   "faible", "kgéqCO2/m²", note="approx")}
 
 
-def quantites(plan: dict, entrees, systeme: str, nb_logements: int = 1) -> list[dict]:
-    """Quantités par élément (valeurs tracées). ``entrees`` : Entrees du modèle énergétique."""
+def quantites(plan: dict, entrees, systeme: str, nb_logements: int = 1, dossier: dict | None = None) -> list[dict]:
+    """Quantités par élément (valeurs tracées). ``entrees`` : Entrees du modèle énergétique ; ``dossier`` : notice lue."""
+    dossier = dossier or {}
+    terrasse = any("terrasse" in p["designation"].lower() for p in dossier.get("parois", []))
+    emetteurs = (dossier.get("chauffage", {}).get("emetteurs") or {}).get("valeur", "") or ""
+    vmc_df = (dossier.get("ventilation", {}).get("type") or {}).get("valeur") == "double flux"
+    ecs_type = (dossier.get("ecs", {}).get("type") or {}).get("valeur", "") or ""
+    bardage = any("bardage" in p["designation"].lower() or "bardage" in p.get("composition", "").lower()
+                  for p in dossier.get("parois", []) if p["type_paroi"] == "mur_ext")
+    src_d = lambda cle: (dossier.get(cle, {}).get("type") or dossier.get(cle, {}).get("generateur") or {}).get("source", "dossier")
     niv = plan["niveaux"]
     sref = entrees.sref
     q = []
@@ -60,10 +72,15 @@ def quantites(plan: dict, entrees, systeme: str, nb_logements: int = 1) -> list[
     ajout("__structure__", s_murs, "déduit", "murs extérieurs nets (plan, baies déduites)")
     if len(niv) > 1:
         ajout("__plancher__", sum(s_int[1:]), "déduit", "surfaces intérieures des niveaux supérieurs")
-    toiture = entrees.surfaces["toiture"] * 1.15
-    ajout("charpente_fermettes", toiture, "supposé", "plancher haut x 1,15 (toiture en pente supposée)", "faible")
-    ajout("couverture_tuiles", toiture, "supposé", "plancher haut x 1,15 (toiture en pente supposée)", "faible")
-    ajout("isolation_combles", entrees.surfaces["toiture"], "supposé", "combles perdus supposés", "faible")
+    if terrasse:
+        src_t = next(p["Up"]["source"] for p in dossier["parois"] if "terrasse" in p["designation"].lower() and p.get("Up"))
+        for ident in ("dalle_beton_toiture", "isolant_toiture_terrasse", "etancheite_toiture"):
+            ajout(ident, entrees.surfaces["toiture"], "déduit", f"toiture-terrasse lue ({src_t}) x surface du plancher haut")
+    else:
+        toiture = entrees.surfaces["toiture"] * 1.15
+        ajout("charpente_fermettes", toiture, "supposé", "plancher haut x 1,15 (toiture en pente supposée)", "faible")
+        ajout("couverture_tuiles", toiture, "supposé", "plancher haut x 1,15 (toiture en pente supposée)", "faible")
+        ajout("isolation_combles", entrees.surfaces["toiture"], "supposé", "combles perdus supposés", "faible")
     ajout("cloison_placo", 0.9 * sref, "supposé", "ratio 0,9 m² de cloison par m² de Sref", "faible")
     ajout("doublage", s_murs, "déduit", "murs extérieurs nets")
     ajout("plafond_placo", sum(s_int), "déduit", "surfaces intérieures de tous les niveaux")
@@ -73,12 +90,19 @@ def quantites(plan: dict, entrees, systeme: str, nb_logements: int = 1) -> list[
         ajout("porte_interieure", round(sref / 12), "supposé", "1 porte pour 12 m²", "faible")
     if ite:
         ajout("ite_isolant", s_murs, "déduit", "murs extérieurs nets (ITE lue sur le plan)")
-    ajout("enduit_facade", s_murs, "supposé", "façades enduites supposées", "faible")
+    if not bardage:
+        ajout("enduit_facade", s_murs, "supposé", "façades enduites supposées", "faible")
     ajout("__menuiserie__", sum(entrees.baies.values()), "déduit", "Σ baies (étiquettes du plan)")
     ajout("porte_entree", nb_logements, "supposé", "1 porte d'entrée par logement", "moyenne")
     ajout("carrelage", sref, "supposé", "revêtement de sol sur toute la Sref", "faible")
     ajout("peinture", 2 * s_murs + 2 * 0.9 * sref + sum(s_int), "supposé", "doublages + 2 faces de cloisons + plafonds", "faible")
-    s = systeme.lower()
+    s = systeme.lower().split(" + ecs")[0]  # partie chauffage du système
+    if "réseau de chaleur" in s:
+        ajout("sous_station", 1, "déduit", f"réseau de chaleur lu ({src_d('chauffage')})")
+    if "radiateur" in emetteurs and "joule" not in s and "électrique" not in emetteurs:
+        ajout("radiateur_eau", max(1, round(sref / 15)), "supposé", "radiateurs à eau lus, 1 pour 15 m² supposé", "faible")
+    if "ballon électrique" in ecs_type:
+        ajout("ballon_electrique", nb_logements, "déduit", f"ECS lue ({src_d('ecs')})")
     if "pac" in s:
         ajout("pac_air_eau", nb_logements, "déduit", f"système : {systeme}")
         ajout("plancher_chauffant", sref, "supposé", "émetteur plancher chauffant supposé avec PAC", "faible")
@@ -88,7 +112,10 @@ def quantites(plan: dict, entrees, systeme: str, nb_logements: int = 1) -> list[
         ajout("radiateur_elec", max(1, round(sref / 15)), "supposé", "1 radiateur pour 15 m²", "faible")
     if "thermodynamique" in s or "cet" in s:
         ajout("cet", nb_logements, "déduit", f"système : {systeme}")
-    ajout("vmc_sf", nb_logements, "supposé", "VMC simple flux hygro par logement", "moyenne")
+    if vmc_df:
+        ajout("cta_double_flux", 1, "déduit", f"double flux lu ({src_d('ventilation')})")
+    else:
+        ajout("vmc_sf", nb_logements, "supposé", "VMC simple flux hygro par logement", "moyenne")
     ajout("reseaux_cvc", sref, "déduit", "forfait x Sref")
     ajout("sanitaires", nb_logements, "déduit", "forfait par logement")
     ajout("courant_fort", sref, "déduit", "forfait x Sref")
@@ -98,12 +125,13 @@ def quantites(plan: dict, entrees, systeme: str, nb_logements: int = 1) -> list[
 
 def estimer_acv(plan: dict, entrees, estimation: dict, date_pc, zone: str, altitude_m: float, systeme: str,
                 nb_logements: int = 1, structure: str = "parpaing", plancher: str = "hourdis", menuiserie: str = "pvc",
-                catalogue: CatalogueACV | None = None) -> dict:
+                catalogue: CatalogueACV | None = None, dossier: dict | None = None, sources: dict | None = None) -> dict:
+    """``sources`` : {structure|plancher|menuiseries: valeur tracée} quand le choix vient du dossier (sinon supposé)."""
     cat = catalogue or CatalogueACV()
     sref = entrees.sref
     rempl = {"__structure__": STRUCTURES[structure], "__plancher__": PLANCHERS[plancher], "__menuiserie__": MENUISERIES[menuiserie]}
     lignes = []
-    for item in quantites(plan, entrees, systeme, nb_logements):
+    for item in quantites(plan, entrees, systeme, nb_logements, dossier):
         ident = rempl.get(item["element"], item["element"])
         e = cat.element(ident)
         qte = item["quantite"]["valeur"]
@@ -165,8 +193,8 @@ def estimer_acv(plan: dict, entrees, estimation: dict, date_pc, zone: str, altit
                              "remplacer": f"{l['fiche_defaut']['type']} → {l['fiche_specifique']['type']} « {l['fiche_specifique']['nom']} »"}
                             for l in top],
         "Ic_energie": ene["Ic_energie"], "Ic_energie_max": ene["Ic_energie_max"],
-        "hypotheses": {"structure": val(structure, "supposé", "nature des murs non lue sur le plan", "faible"),
-                       "plancher_intermediaire": val(plancher, "supposé", "non lu sur le plan", "faible"),
-                       "menuiseries": val(menuiserie, "supposé", "matériau des menuiseries non lu", "faible")},
+        "hypotheses": {"structure": (sources or {}).get("structure") or val(structure, "supposé", "nature des murs non lue", "faible"),
+                       "plancher_intermediaire": (sources or {}).get("plancher") or val(plancher, "supposé", "non lu", "faible"),
+                       "menuiseries": (sources or {}).get("menuiseries") or val(menuiserie, "supposé", "matériau des menuiseries non lu", "faible")},
         "alertes": alertes,
     }

@@ -168,6 +168,8 @@ th:last-child, td:last-child { padding-right: 24px; }
 .indicateur { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .indicateur-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .indicateur-tete span { color: var(--texte-2); font-size: 13px; }
+.indicateur-tete .verdict { white-space: normal; text-align: right; justify-content: flex-end; }
+.indicateur-tete .verdict svg { flex: none; }
 .indicateur-valeur { font-size: 32px; line-height: 40px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .indicateur-valeur small { font-size: 13px; font-weight: 400; color: var(--texte-3); margin-left: 6px; letter-spacing: 0; }
 .jauge { position: relative; height: 28px; }

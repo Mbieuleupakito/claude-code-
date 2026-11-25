@@ -39,6 +39,11 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 - `src/re2020/api.py` (fait) : FastAPI locale + page web (dépôt du plan → verdict, PDF ou HTML imprimable, image de contrôle,
   « Mes études ») ; études en SQLite dans `etudes/`. Lanceurs `lancer.bat` / `lancer.command` (installation auto au 1er
   lancement) ; `--reseau --mot-de-passe` pour le téléphone ; `Dockerfile` pour un serveur interne (phase entreprise).
+- `web/` (fait) : site Next.js 15 / TypeScript, compilé en pages statiques publiées dans `src/re2020/web/` et servies
+  par l'API (pas de Node pour l'utilisateur). Pages : études, nouvelle étude, fiche d'étude (jauges seuil/fourchette,
+  plan annoté, baies, déperditions, Ψ, propositions, ACV par lot, hypothèses), fiabilité du modèle, catalogues.
+  Design : neutres graphite + un accent, pastille de provenance lu/déduit/supposé, clair/sombre, mobile.
+  Après modification : `cd web && npm run build` puis committer `src/re2020/web/`.
 - `src/re2020/acv/` (fait) : quantités par lot déduites du plan (ou supposées), catalogue `data/catalogues/fiches_acv.json`
   (DED / FDES : ORDRES DE GRANDEUR SUPPOSÉS → importer les vraies fiches via `CatalogueACV.importer_csv`, modèle
   `fiches_acv_modele.csv`), Ic construction en 3 scénarios (DED / FDES sur les 5 plus gros postes / tout FDES), seuil
@@ -54,7 +59,7 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 4. Propositions : fait ; remplacer les prix indicatifs (supposés) de `data/catalogues/produits.json` par les prix fournisseur.
 5. ACV : fait (ordres de grandeur cohérents avec Boumnich : DED ≈ 600, −15 à −20 % avec FDES, Ic énergie ≈ 69).
    Reste : importer les fiches INIES réelles, calibrer sur l'ACV Pléiades de Boumnich (inventaire par lot à récupérer).
-6. Rapport PDF + API/page web locale : fait. Frontend Next.js plus tard.
+6. Rapport PDF + API + site Next.js local : fait.
 7. Calibrage massif avec OPEE (data.gouv.fr) et RSEE XSD.
 
 ## Données de départ

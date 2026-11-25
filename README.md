@@ -18,6 +18,13 @@ Mise à jour de l'outil : `mettre_a_jour.bat` (ou `git pull`).
 Si le PDF ne peut pas être produit (WeasyPrint sans ses bibliothèques, fréquent sous Windows), la feuille de route
 s'ouvre en version web : **Imprimer → Enregistrer en PDF** depuis le navigateur.
 
+## Le site (web/)
+Pages : Études, Nouvelle étude (glisser-déposer du plan), fiche d'étude (verdicts avec fourchette, plan annoté,
+enveloppe, ponts thermiques, propositions, ACV, hypothèses à valider), Fiabilité du modèle, Catalogues.
+Le site est compilé dans `src/re2020/web/` (déjà inclus) : **Node n'est pas nécessaire pour l'utiliser**.
+Pour le modifier : `cd web && npm install`, puis `npm run dev` (http://localhost:3000, l'API Python doit tourner sur
+le port 8000) ; `npm run build` recompile et republie dans `src/re2020/web/`.
+
 ## Plus tard : serveur interne pour l'équipe
 `Dockerfile` + `docker-compose.yml` : sur un PC/serveur du bureau, créer `.env` avec `RE2020_MOT_DE_PASSE=...`,
 puis `docker compose up -d` → http://<serveur>:8000 pour tout le monde (études dans `./etudes`).

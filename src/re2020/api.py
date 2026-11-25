@@ -25,12 +25,20 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 
+from .acv import CatalogueACV
 from .catalogues import Catalogue
+from .estimation.references import comparer
 from .etude import Parametres, realiser_etude
 from .plans.controle import image_controle
 from .rapport import generer_html, generer_pdf
 from .seuils import ZONES
+
+WEB = Path(__file__).resolve().parent / "web"  # site Next.js compilé (npm run build dans web/)
+STRUCTURES = {"parpaing": "Blocs béton", "brique": "Brique", "beton": "Béton banché", "ossature_bois": "Ossature bois"}
+PLANCHERS = {"hourdis": "Poutrelles-hourdis", "bois": "Bois"}
+MENUISERIES_ACV = {"pvc": "PVC", "alu": "Aluminium"}
 
 SCHEMA = """CREATE TABLE IF NOT EXISTS etudes (id TEXT PRIMARY KEY, cree TEXT, projet TEXT, fichier TEXT,
             parametres TEXT, statut TEXT, erreur TEXT, synthese TEXT)"""
@@ -72,7 +80,45 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
             raise HTTPException(404, "étude inconnue")
         return d
 
-    @app.get("/", response_class=HTMLResponse)
+    def liens(i: str) -> dict:
+        d = racine / i
+        pdf_ok = (d / "feuille_de_route.pdf").exists()
+        return {"etude": f"/api/etudes/{i}", "rapport_html": f"/api/etudes/{i}/rapport.html",
+                "rapport": f"/api/etudes/{i}/rapport.pdf" if pdf_ok else f"/api/etudes/{i}/rapport.html",
+                "pdf_disponible": pdf_ok, "controle": f"/api/etudes/{i}/controle.png"}
+
+    @app.get("/api/config")
+    def config():
+        return {"zones": ZONES, "systemes": [s["nom"] for s in catalogue.systemes()], "structures": STRUCTURES,
+                "planchers": PLANCHERS, "menuiseries": MENUISERIES_ACV}
+
+    cache_refs: dict = {}
+
+    @app.get("/api/references")
+    def references():
+        if "v" not in cache_refs:
+            cache_refs["v"] = comparer(catalogue)
+        return cache_refs["v"]
+
+    @app.get("/api/catalogues")
+    def catalogues():
+        acv = CatalogueACV()
+        return {"compositions": [{"nom": c["nom"], "type_paroi": c["type_paroi"], "U": c["U"], "up_pleiades": c["up_pleiades"],
+                                  "epaisseur_cm": c["epaisseur_cm"], "couches": c["couches"], "alertes": c.get("alertes", [])}
+                                 for c in catalogue.compositions()],
+                "isolants": catalogue.isolants(), "menuiseries": catalogue.menuiseries(), "systemes": catalogue.systemes(),
+                "fiches_acv": {"lots": acv.lots, "elements": list(acv.elements.values())}}
+
+    @app.delete("/api/etudes/{i}")
+    def supprimer(i: str):
+        d = dossier_etude(i)
+        for f in d.iterdir():
+            f.unlink()
+        d.rmdir()
+        db.execute("DELETE FROM etudes WHERE id=?", (i,))
+        db.commit()
+        return {"supprime": i}
+
     def accueil():
         return PAGE.replace("{{ZONES}}", "".join(f"<option>{z}</option>" for z in ZONES)).replace(
             "{{SYSTEMES}}", "".join(f"<option>{s['nom']}</option>" for s in catalogue.systemes()))
@@ -120,23 +166,23 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
                     "acv": {"Ic_construction_defaut": e["acv"]["Ic_construction"]["par_defaut"],
                             "Ic_construction_top_fiches": e["acv"]["Ic_construction"]["top_fiches"],
                             "Ic_construction_max": e["acv"]["Ic_construction_max"]["valeur"],
-                            "Ic_energie": e["acv"]["Ic_energie"]}}
+                            "Ic_energie": e["acv"]["Ic_energie"], "verdict": e["acv"]["verdict"]},
+                    "zone": e["parametres"]["zone"], "sref": e["entrees"]["sref"]}
         db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "ok", None, json.dumps(synthese, ensure_ascii=False)))
         db.commit()
-        pdf_ok = (d / "feuille_de_route.pdf").exists()
-        return {"id": i, **synthese, "liens": {"etude": f"/api/etudes/{i}",
-                                               "rapport": f"/api/etudes/{i}/rapport.pdf" if pdf_ok else f"/api/etudes/{i}/rapport.html",
-                                               "rapport_html": f"/api/etudes/{i}/rapport.html",
-                                               "controle": f"/api/etudes/{i}/controle.png"}}
+        return {"id": i, **synthese, "liens": liens(i)}
 
     @app.get("/api/etudes")
     def lister():
         return [{"id": r["id"], "cree": r["cree"], "projet": r["projet"], "fichier": r["fichier"], "statut": r["statut"],
-                 "erreur": r["erreur"]} for r in db.execute("SELECT * FROM etudes ORDER BY cree DESC")]
+                 "erreur": r["erreur"], "synthese": json.loads(r["synthese"]) if r["synthese"] else None,
+                 "liens": liens(r["id"]) if r["statut"] == "ok" else None}
+                for r in db.execute("SELECT * FROM etudes ORDER BY cree DESC")]
 
     @app.get("/api/etudes/{i}")
     def lire(i: str):
-        return json.loads((dossier_etude(i) / "etude.json").read_text(encoding="utf-8"))
+        e = json.loads((dossier_etude(i) / "etude.json").read_text(encoding="utf-8"))
+        return {**e, "id": i, "liens": liens(i)}
 
     @app.get("/api/etudes/{i}/rapport.pdf")
     def rapport(i: str):
@@ -152,6 +198,10 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
     def controle(i: str):
         return FileResponse(dossier_etude(i) / "controle.png", media_type="image/png")
 
+    if (WEB / "index.html").exists():
+        app.mount("/", StaticFiles(directory=WEB, html=True), name="site")
+    else:  # site non compilé : page simple de secours
+        app.get("/", response_class=HTMLResponse)(accueil)
     return app
 
 

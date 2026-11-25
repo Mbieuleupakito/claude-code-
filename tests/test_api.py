@@ -19,9 +19,16 @@ def plan_pdf(tmp_path_factory):
 
 
 def test_page_accueil(client):
+    import re
+    from re2020.api import WEB
     r = client.get("/")
-    assert r.status_code == 200 and "Lancer l'étude" in r.text and "H2d" in r.text
-    assert "http" not in r.text.split("<script>")[0].lower().replace("http-equiv", "")  # aucune ressource externe
+    assert r.status_code == 200
+    if (WEB / "index.html").exists():
+        assert "Feuille de route RE2020" in r.text
+    else:  # page de secours
+        assert "Lancer l'étude" in r.text and "H2d" in r.text
+    # aucune ressource chargée depuis l'extérieur (règle 5)
+    assert not re.findall(r'(?:src|href)="(?:https?:)?//', r.text)
 
 
 def test_etude_complete(client, plan_pdf):
@@ -84,3 +91,24 @@ def test_mode_reseau_exige_un_mot_de_passe():
     from re2020.api import main
     with pytest.raises(SystemExit):
         main(["--reseau", "--sans-navigateur"])
+
+
+def test_site_et_routes_du_site(client, plan_pdf):
+    from re2020.api import WEB
+    if (WEB / "index.html").exists():
+        for page in ("/", "/nouvelle/", "/etude/", "/modele/", "/catalogues/"):
+            r = client.get(page)
+            assert r.status_code == 200 and "Feuille de route RE2020" in r.text, page
+    cfg = client.get("/api/config").json()
+    assert "H1c" in cfg["zones"] and "ossature_bois" in cfg["structures"]
+    cat = client.get("/api/catalogues").json()
+    assert len(cat["compositions"]) == 7 and cat["fiches_acv"]["elements"]
+    refs = client.get("/api/references").json()
+    assert refs[0]["cas"].startswith("Charleville")
+    j = client.post("/api/etudes", files={"fichier": ("plan.pdf", plan_pdf, "application/pdf")},
+                    data={"zone": "H1b", "altitude_m": "150", "date_pc": "2026-11-17", "projet": "À supprimer"}).json()
+    liste = {e["id"]: e for e in client.get("/api/etudes").json()}
+    assert liste[j["id"]]["synthese"]["verdict"]["Bbio"] and liste[j["id"]]["liens"]["controle"]
+    assert client.get(f"/api/etudes/{j['id']}").json()["liens"]["etude"].endswith(j["id"])
+    assert client.delete(f"/api/etudes/{j['id']}").json() == {"supprime": j["id"]}
+    assert client.get(f"/api/etudes/{j['id']}").status_code == 404

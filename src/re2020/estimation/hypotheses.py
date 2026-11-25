@@ -135,6 +135,24 @@ def appliquer_dossier(e: Entrees, hyp: dict, plan: dict, dossier: dict, choix: d
         if cle and choix.get(cle[0]) is None:
             e.U[cle[1]] = p["Up"]["valeur"]
             hyp[cle[0]] = {**p["Up"], "note": f"{p['ref']} {p['designation']} (Up global de la notice)"}
+    # ---- surfaces de parois écrites (RSET) : plus fiables que celles du plan (HSP supposée) ; portes comptées avec les murs
+    surf = {}
+    for p in dossier.get("parois", []):
+        if p.get("Up") and p.get("surface_m2") and p["type_paroi"] in ("mur_ext", "porte", "plafond", "plancher_bas"):
+            k = {"mur_ext": "murs", "porte": "murs", "plafond": "toiture", "plancher_bas": "plancher_bas"}[p["type_paroi"]]
+            a, u = p["surface_m2"]["valeur"], p["Up"]["valeur"]
+            t = surf.setdefault(k, [0.0, 0.0, []])
+            t[0] += a
+            t[1] += a * u
+            t[2].append(f"{p['ref']} {a:g} m² (U {u:g})")
+    for k, (a, ua, det) in surf.items():
+        cle_u = {"murs": "U_murs", "toiture": "U_toiture", "plancher_bas": "U_plancher_bas"}[k]
+        if a <= 0 or choix.get(cle_u) is not None:
+            continue
+        e.surfaces[k] = a
+        e.U[k] = ua / a
+        hyp[cle_u] = val(round(ua / a, 3), "lu", "Up x surfaces du dossier : " + " + ".join(det), "haute", "W/m².K")
+        hyp[f"surface_{k}"] = val(round(a, 1), "lu", "surfaces de parois du dossier", "haute", "m²")
     # ---- menuiseries : Uw et Sw pondérés par les surfaces de baies du plan, lanterneau ajouté à la toiture
     men = {m["repere"].upper(): m for m in dossier.get("menuiseries", [])}
     if men:
@@ -159,6 +177,28 @@ def appliquer_dossier(e: Entrees, hyp: dict, plan: dict, dossier: dict, choix: d
                 at, al = e.surfaces["toiture"], m["surface_m2"]["valeur"]
                 e.U["toiture"] = (e.U["toiture"] * (at - al) + m["U"]["valeur"] * al) / at
                 hyp["U_toiture"] = val(round(e.U["toiture"], 3), "déduit", f"Up toiture + {m['designation']} (U {m['U']['valeur']})", "haute", "W/m².K")
+    # ---- vitrages du RSET / rapport Pléiades : Uw et Sw pondérés par leurs propres surfaces
+    vit = dossier.get("vitrages") or []
+    if vit and "notice pondérés" not in str(hyp.get("Uw", {}).get("source", "")):
+        st = sum(v["surface_m2"]["valeur"] for v in vit)
+        src = vit[0]["Uw"]["source"]
+        if st and choix.get("Uw") is None:
+            e.U["baies"] = sum(v["Uw"]["valeur"] * v["surface_m2"]["valeur"] for v in vit) / st
+            hyp["Uw"] = val(round(e.U["baies"], 3), "lu", f"Uw des {len(vit)} baies du dossier pondérés par leurs surfaces ({src})", "haute", "W/m².K")
+        avec_sw = [v for v in vit if v.get("Sw")]
+        if avec_sw and choix.get("Sw") is None:
+            s2 = sum(v["surface_m2"]["valeur"] for v in avec_sw)
+            e.Sw = sum(v["Sw"]["valeur"] * v["surface_m2"]["valeur"] for v in avec_sw) / s2
+            hyp["Sw"] = val(round(e.Sw, 3), "lu", f"Sw des baies du dossier pondérés par leurs surfaces ({src})", "haute")
+    # ---- surfaces de baies par orientation écrites (RSET) : plus fiables que les hauteurs supposées du plan
+    bo = dossier.get("baies_orientation") or {}
+    if bo and sum(v["valeur"] for v in bo.values()) > 0:
+        s_plan = sum(e.baies.values())
+        e.baies = {o: v["valeur"] for o, v in bo.items() if v["valeur"] > 0}
+        s_lu = sum(e.baies.values())
+        hyp["baies_par_orientation"] = val({o: round(x, 2) for o, x in e.baies.items()}, "lu",
+                                           f"surfaces de baies par orientation du dossier ({next(iter(bo.values()))['source']})", "haute", "m²",
+                                           note=f"plan : {s_plan:.1f} m² (hauteurs supposées) ; dossier : {s_lu:.1f} m²")
     # ---- ponts thermiques : tableau de la notice
     P = dossier.get("ponts_thermiques", {})
     if P.get("liaisons") and (P.get("total_W_K") or {}).get("valeur"):

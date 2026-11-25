@@ -39,6 +39,11 @@ def _nb(t: str | None) -> float | None:
     return float(m.group(0).replace(",", ".")) if m else None
 
 
+def _orient(o: str) -> str:
+    return {"sud": "S", "nord": "N", "est": "E", "ouest": "O", "sud-est": "SE", "sud-ouest": "SO",
+            "nord-est": "NE", "nord-ouest": "NO"}[o]
+
+
 def _cellule(t: str | None) -> str:
     return re.sub(r"\s+", " ", (t or "").replace("\n", " ")).strip()
 
@@ -48,7 +53,8 @@ class _Lecteur:
         self.d: dict = {"infos": {}, "parois": [], "menuiseries": [], "ponts_thermiques": {"liaisons": []},
                         "baies": [], "locaux": [], "bilan_facades": [], "surfaces": {}, "ventilation": {},
                         "chauffage": {}, "ecs": {}, "eclairage": {}, "hauteurs": {}, "pages_lues": [],
-                        "localisation_candidats": [], "cotes_ngf": [], "dates": []}
+                        "localisation_candidats": [], "cotes_ngf": [], "dates": [],
+                        "vitrages": [], "baies_orientation": {}, "resultats_pleiades": {}}
 
     def lu(self, valeur, source, unite=None, conf="haute", **extra):
         return val(valeur, "lu", source, conf, unite, **extra)
@@ -83,7 +89,10 @@ class _Lecteur:
             return
         tete = [_sa(c) for c in lignes[0]]
         h = " | ".join(tete) + " | " + " | ".join(c.replace(" ", "") for c in tete)  # en-têtes coupés (« Repè re »)
-        if len(tete) == 2 and not any(k in h for k in ("liaison", "facade", "local")):
+        if any(_sa(r[0]).startswith(("generateur principal", "type de systeme de ventilation", "coefficient bbio",
+                                     "coefficients cep")) for r in lignes):
+            self._systemes_resultats(lignes, src)
+        elif len(tete) == 2 and not any(k in h for k in ("liaison", "facade", "local")):
             self._cle_valeur(lignes, src)
         elif "liaison" in h and ("ψ" in lignes[0][1].lower() or "psi" in h or "w/(m.k)" in h):
             self._ponts(lignes, src)
@@ -97,8 +106,110 @@ class _Lecteur:
             self._menuiseries(lignes, src)
         elif ("up" in h or "u " in h or "w/(" in h) and ("designation" in h or "composition" in h):
             self._parois(lignes, src)
-        else:  # tableau large clé | valeur | … (RSET : « SRef / usage principal | 212,2 m2 / Maison… ») : clés connues seulement
-            self._cle_valeur([[r[0], next((c for c in r[1:] if c), "")] for r in lignes], src)
+        elif "libelle paroi vitree" in h or ("uw" in h and "vitrage" in h and "surface" in h):
+            self._vitrages(lignes, src)
+        elif "libelle paroi" in h and ("u paroi" in h or "u global" in h):
+            self._parois_rset(lignes, src)
+        elif tete[0].startswith("orientation") and "surface totale des baies" in h:
+            self._baies_orientation(lignes, src)
+        else:  # tableau large clé | valeur | clé | valeur (RSET « SRef / usage principal | 212,2 m2… ») : clés connues seulement
+            paires = []
+            for r in lignes:
+                paires.append([r[0], next((c for c in r[1:2] if c), "") or next((c for c in r[1:] if c), "")])
+                if len(r) >= 4 and r[2]:
+                    paires.append([r[2], r[3]])
+            self._cle_valeur(paires, src)
+
+    # ------------------------------------------------------------------ RSET / rapports Pléiades
+    def _parois_rset(self, lignes, src):
+        """« Type paroi | Nature | Libellé paroi | … | U paroi | Surface » (RSET) : Up « lu » par paroi."""
+        tete = [_sa(c) for c in lignes[0]]
+        ilib = next(i for i, c in enumerate(tete) if "libelle" in c)
+        iu = next(i for i, c in enumerate(tete) if c.startswith("u paroi") or c.startswith("u ") or "u global" in c)
+        isurf = next((i for i, c in enumerate(tete) if c.startswith("surface")), None)
+        for r in lignes[1:]:
+            if _sa(r[0]).startswith("total") or _nb(r[iu]) is None:
+                continue
+            nat = f"{r[0]} {r[1]}"
+            des = r[ilib]
+            ns = _sa(nat + " " + des)
+            t = ("porte" if "porte" in ns else "plancher_bas" if "plancher bas" in ns or "planchers bas" in ns
+                 else "plafond" if "plancher haut" in ns or "planchers hauts" in ns or "comble" in ns or "toiture" in ns
+                 else "mur_ext" if "mur" in ns else type_paroi(des))
+            self.d["parois"].append({"ref": des, "designation": r[1], "type_paroi": t,
+                                     "Up": self.lu(_nb(r[iu]), src, "W/m².K", note="U paroi du RSET"),
+                                     "surface_m2": self.lu(_nb(r[isurf]), src, "m²") if isurf is not None and _nb(r[isurf]) else None,
+                                     "composition": "", "couches": [], "R_isolants": ""})
+
+    def _vitrages(self, lignes, src):
+        """Parois vitrées du RSET : Uw, Sw (g), Tl et surface par ligne ; totaux par orientation."""
+        tete = [_sa(c) for c in lignes[0]]
+        iuw = next((i for i, c in enumerate(tete) if c.startswith("uw")), None)
+        isw = next((i for i, c in enumerate(tete) if c.startswith(("sw", "facteur solaire", "g "))), None)
+        isurf = next((i for i, c in enumerate(tete) if c.startswith("surface")), None)
+        if iuw is None or isurf is None:
+            return
+        for r in lignes[1:]:
+            if _sa(r[0]).startswith("total"):
+                o = re.search(r"(sud|nord|est|ouest)(?:-(est|ouest))?", _sa(r[0]))
+                tot = next((_nb(c) for c in reversed(r[1:]) if _nb(c) is not None), None)
+                if o and tot is not None:
+                    self.d["baies_orientation"].setdefault(_orient(o.group(0)), self.lu(tot, src, "m²"))
+                continue
+            uw, surf = _nb(r[iuw]), _nb(r[isurf])
+            if uw is None or not surf:
+                continue
+            sw = None
+            if isw is not None:
+                sw = _nb(r[isw])
+            else:  # RSET : « Sw » non titré proprement : 2 colonnes décimales après l'origine de Uw (Sw hiver, Tl)
+                apres = [_nb(c) for c in r[iuw + 2:isurf] if _nb(c) is not None]
+                sw = apres[0] if apres else None
+            self.d["vitrages"].append({"libelle": r[0], "type": r[1] if len(r) > 1 else "", "menuiserie": r[3] if len(r) > 3 else "",
+                                       "Uw": self.lu(uw, src, "W/m².K"), "Sw": self.lu(sw, src) if sw is not None else None,
+                                       "surface_m2": self.lu(surf, src, "m²")})
+
+    def _baies_orientation(self, lignes, src):
+        for r in lignes[1:]:
+            o = re.search(r"(sud|nord|est|ouest)(?:-(est|ouest))?", _sa(r[0]))
+            if o and _nb(r[1]) is not None:
+                self.d["baies_orientation"][_orient(o.group(0))] = self.lu(_nb(r[1]), src, "m²")
+
+    def _systemes_resultats(self, lignes, src):
+        R, C, E, V = self.d["resultats_pleiades"], self.d["chauffage"], self.d["ecs"], self.d["ventilation"]
+        t0 = ""  # sous-tableau en cours (plusieurs petits tableaux du RSET peuvent arriver fusionnés)
+        for r in lignes:
+            k = _sa(r[0])
+            if k.startswith(("generateur principal", "type de systeme de ventilation", "vecteur d")):
+                t0 = k
+                continue
+            vals = [_nb(c) for c in r[1:]]
+            if k.startswith("coefficient bbio") and vals and vals[0] is not None:
+                R["Bbio"] = self.lu(vals[0], src, "points")
+                if len(vals) > 1 and vals[1] is not None:
+                    R["Bbio_max"] = self.lu(vals[1], src, "points")
+            elif k.startswith("coefficients cep") and len(vals) >= 4:
+                for cle, x in zip(("Cep", "Cep_max", "Cep_nr", "Cep_nr_max"), vals[:4]):
+                    if x is not None:
+                        R[cle] = self.lu(x, src, "kWhep/m².an")
+            elif t0.startswith("generateur principal") and len(r) > 1 and r[1]:
+                g = _sa(r[1])
+                nom = ("pompe à chaleur" if "pac" in g or "pompe" in g else "chaudière" if "chaudiere" in g
+                       else "bois granulés" if "granul" in g else "effet Joule" if "joule" in g else None)
+                if k == "chaud" and nom:
+                    C["generateur"] = self.lu(nom, src, note=r[1])  # le tableau du RSET prime sur le texte libre
+                elif k == "ecs" and nom:
+                    E["type"] = self.lu("PAC double service" if "double service" in g else
+                                        "chauffe-eau thermodynamique" if "thermodyn" in g else nom, src, note=r[1])
+            elif t0.startswith("type de systeme de ventilation") and len(r) > 1 and _sa(r[1]) == "oui":
+                if "double flux" in k or k.startswith("groupe de ventilation df"):
+                    V["type"] = self.lu("double flux", src)
+                elif "hygroreglable type b" in k:
+                    V["type"] = self.lu("simple flux hygroréglable B", src)
+                elif "hygroreglable type a" in k:
+                    V["type"] = self.lu("simple flux hygroréglable A", src)
+                elif "simple flux" in k:
+                    V["type"] = self.lu("simple flux", src)
 
     def _cle_valeur(self, lignes, src):
         bloc = None  # bloc en cours : intervenant (maître d'ouvrage, architecte, BET…) ou opération (le chantier)
@@ -144,6 +255,19 @@ class _Lecteur:
                 if bloc == "operation" or "adresse" not in I:
                     I["adresse"] = self.lu(v, src)
                 self.d["localisation_candidats"] += candidats_lieu(f"adresse du projet : {v}", src, 4.0 if bloc == "operation" else 3.0)
+            elif k.startswith("materiau principal de la structure"):
+                sv = _sa(v)
+                st = ("brique" if "terre cuite" in sv or "brique" in sv else "ossature_bois" if "bois" in sv
+                      else "beton" if "beton" in sv and "parpaing" not in sv and "bloc" not in sv else "parpaing" if sv else None)
+                if st:
+                    I["structure"] = self.lu(st, src, note=v)
+            elif k.startswith("mode d'isolation des parois verticales") or k.startswith("mode d isolation des parois verticales"):
+                I["isolation_murs"] = self.lu("ITE" if "exterieur" in _sa(v) else "ITI" if "interieur" in _sa(v) else v, src, note=v)
+            elif k.startswith(("mode d'isolation des toitures", "mode d isolation des toitures")):
+                I["type_toiture"] = self.lu(v, src)
+            elif k.startswith("type de menuiseries"):
+                sv = _sa(v)
+                I["menuiseries"] = self.lu("alu" if "alu" in sv else "bois" if "bois" in sv else "pvc" if "pvc" in sv else v, src, note=v)
             elif "bruit" in k:
                 I["exposition_bruit"] = self.lu(v, src)
             elif "emprise" in k:

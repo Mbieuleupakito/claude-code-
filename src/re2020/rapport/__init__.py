@@ -99,6 +99,14 @@ def generer_html(e: dict) -> str:
     H.append(table(["Indicateur", "Estimation [fourchette]", "Seuil max", "Verdict"], lignes))
     if s["approx"]:
         H.append("<p class='alerte'>Seuils « approx » : MbHSP/McHSP inconnus (décret 2026-200).</p>")
+    rp = e.get("resultats_pleiades") or {}
+    if rp.get("Bbio"):
+        est = e["estimation"]
+        H.append("<h3>Résultats Pléiades trouvés dans le dossier (étude déjà faite)</h3>" + table(
+            ["Indicateur", "Pléiades (lu)", "Max Pléiades (lu)", "Estimation de l'outil", "Écart"],
+            [[k, fv(rp[k]), fv(rp[k + "_max"]) if rp.get(k + "_max") else "—", fv(est[k]),
+              f"{est[k]['valeur'] - rp[k]['valeur']:+.1f}"] for k in ("Bbio", "Cep", "Cep_nr") if rp.get(k)])
+            + "<p class='note'>Ces valeurs Pléiades font foi ; l'écart mesure la fiabilité de l'estimation sur ce projet.</p>")
     a = e["acv"]
     H.append(f"<p>Sref : {fv(e['_trace_sref'])} — Ic construction (DED) : {fv(a['Ic_construction']['par_defaut'])} / max "
              f"{fv(a['Ic_construction_max'])} — avec FDES prioritaires : {fv(a['Ic_construction']['top_fiches'])} — "

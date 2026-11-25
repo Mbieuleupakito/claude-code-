@@ -130,9 +130,22 @@ def _fusionner(resultats: list[dict], texte: str, hsp_force: float | None, noms:
         hsp = val(2.50, "supposé", "valeur par défaut (non lisible sur un plan) → lire la coupe", "faible", "m")
     h_etage = val(h["hauteur_etage_m"], "lu", "« hauteur d'étage » écrite dans le dossier", "haute", "m") if "hauteur_etage_m" in h else None
     alertes = []
+    vus = set()
     for r in gardes:
         pref = f"p.{r['page'] + 1} : " if len(gardes) > 1 or r["page"] else ""
-        alertes += [pref + a for a in r["alertes"] if pref + a not in alertes]
+        for a in r["alertes"]:
+            generique = a.startswith(("Nord non détecté", "Échelle non vérifiée"))  # une seule fois pour tout le dossier
+            if (a if generique else pref + a) in vus:
+                continue
+            vus.add(a if generique else pref + a)
+            alertes.append(a if generique else pref + a)
+    # baies sans étiquette : une seule alerte récapitulative au lieu d'une par façade
+    sans = [a for a in alertes if "sans étiquette" in a and "hauteur supposée" in a]
+    if len(sans) > 2:
+        n = sum(int(m) for a in sans for m in re.findall(r": (\d+) ouverture", a))
+        alertes = [a for a in alertes if a not in sans] + [
+            f"{n} baies sans étiquette sur le plan : largeurs mesurées, hauteurs supposées (2,15 m si ≥ 1,60 m de large, "
+            "sinon 1,35 m) → vérifier sur les élévations ou la notice menuiseries (détail par façade dans la section Géométrie)."]
     return {
         "source": " + ".join(noms),
         "page": ref["page"],
@@ -282,7 +295,7 @@ class _Extraction:
             return val(a, "lu", "flèche « NORD » écrite sur le plan", "moyenne", "°",
                        explication="angle du nord par rapport au haut de la feuille, positif vers la droite")
         if not fleches:
-            self.alertes.append("Nord non détecté : saisir l'orientation à la main (--nord).")
+            self.alertes.append("Nord non détecté : le saisir (Options avancées › Nord forcé, en degrés depuis le haut de la feuille).")
             return val(None, "supposé", "symbole du nord non détecté", "faible", "°")
         angles = [nord_mod.angle_nord_depuis_haut(f["vecteur_nord"]) for f in fleches]
         a = st.median(angles)

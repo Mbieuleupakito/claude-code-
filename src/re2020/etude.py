@@ -52,6 +52,14 @@ def realiser_etude(fichiers, p: Parametres, catalogue: Catalogue | None = None,
                          + (" — " + " ; ".join(non_lus) if non_lus else ""))
     plan = extraire_plan(prep["plans"], hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=p.angle_nord_deg)
     dossier = lire_dossier(prep["documents"])
+    if p.angle_nord_deg is None and plan["nord"]["valeur"] is None and dossier.get("baies_orientation"):
+        nord = nord_par_baies(plan, dossier["baies_orientation"])
+        if nord is not None:  # plan relu avec ce nord : façades et baies orientées
+            plan = extraire_plan(prep["plans"], hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=nord["valeur"])
+            plan["nord"] = nord
+            plan["alertes"] = [a for a in plan["alertes"] if "Nord non détecté" not in a] + [
+                f"Nord déduit ({nord['valeur']:g}° depuis le haut de la feuille) en comparant les baies du plan aux surfaces "
+                f"par orientation du dossier : {nord['source']}. À confirmer."]
     dossier["_diagnostic"] = diagnostic(prep, plan)
     e = etude_depuis_plan(plan, p, catalogue, catalogue_acv, dossier)
     e["fichiers"] = {"plans": [f.name for f in prep["plans"]], "documents": [f.name for f in prep["documents"]],
@@ -169,6 +177,33 @@ def controles_croises(plan: dict, dossier: dict) -> list[dict]:
     return out
 
 
+def nord_par_baies(plan: dict, baies_orientation: dict) -> dict | None:
+    """Plan sans symbole du nord : on teste les 4 orientations de la feuille et on garde celle dont les surfaces de baies
+    par côté (haut / droite / bas / gauche) collent le mieux aux surfaces par orientation écrites dans le dossier (RSET)."""
+    cote = {}
+    for n in plan["niveaux"]:
+        for b in n["baies"]:
+            if b.get("cote_feuille"):
+                cote[b["cote_feuille"]] = cote.get(b["cote_feuille"], 0) + b["surface_m2"]["valeur"]
+    lu = {o: v["valeur"] for o, v in baies_orientation.items() if o in ("N", "E", "S", "O")}
+    if len(cote) < 3 or sum(lu.values()) <= 0:
+        return None
+    tc, tl = sum(cote.values()), sum(lu.values())
+    ordre = ["N", "E", "S", "O"]  # orientation du côté « haut » quand le nord est à 0°, puis sens horaire
+    cotes = ["haut", "droite", "bas", "gauche"]
+    scores = []
+    for k, angle in enumerate((0, 90, 180, 270)):
+        # nord à « angle » depuis le haut (sens horaire) : le côté haut regarde vers l'orientation ordre[-k]
+        err = sum(abs(cote.get(c, 0) / tc - lu.get(ordre[(i - k) % 4], 0) / tl) for i, c in enumerate(cotes))
+        scores.append((err, angle))
+    scores.sort()
+    (e1, a1), (e2, _) = scores[0], scores[1]
+    if e1 > 0.6 or e2 - e1 < 0.15:
+        return None
+    return val(a1, "déduit", f"écart de répartition {e1:.2f} (suivant : {e2:.2f})", "moyenne", "°",
+               explication="angle du nord par rapport au haut de la feuille, positif vers la droite")
+
+
 def choix_constructifs(dossier: dict, p: Parametres) -> tuple[dict, dict]:
     """Structure des murs, plancher intermédiaire, matériau des menuiseries : saisis, sinon lus dans la notice."""
     choix = {"structure": p.structure, "plancher": p.plancher, "menuiserie": p.menuiserie}
@@ -193,6 +228,13 @@ def choix_constructifs(dossier: dict, p: Parametres) -> tuple[dict, dict]:
         if v:
             choix["menuiserie"] = v
             sources["menuiseries"] = val(v, "lu", "tableau des menuiseries de la notice", "haute")
+    inf = dossier.get("infos", {})
+    if choix["structure"] is None and inf.get("structure"):
+        choix["structure"] = inf["structure"]["valeur"]
+        sources["structure"] = val(choix["structure"], "lu", f"« {inf['structure'].get('note') or choix['structure']} » ({inf['structure']['source']})", "haute")
+    if choix["menuiserie"] is None and inf.get("menuiseries") and inf["menuiseries"]["valeur"] in ("alu", "pvc", "bois"):
+        choix["menuiserie"] = inf["menuiseries"]["valeur"]
+        sources["menuiseries"] = val(choix["menuiserie"], "lu", f"« {inf['menuiseries'].get('note')} » ({inf['menuiseries']['source']})", "haute")
     return {"structure": choix["structure"] or "parpaing", "plancher": choix["plancher"] or "hourdis",
             "menuiserie": choix["menuiserie"] or "pvc"}, sources
 
@@ -293,6 +335,12 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     entrees.nb_logements = p.nb_logements
     sref = entrees.sref
     seuils = seuils_energie(zone, float(alt_v), sref / p.nb_logements, dpc_v, mb_hsp=p.mb_hsp, mc_hsp=p.mc_hsp)
+    rp = (dossier or {}).get("resultats_pleiades") or {}
+    if all(rp.get(k) for k in ("Bbio_max", "Cep_max", "Cep_nr_max")) and p.mb_hsp is None:
+        # seuils calculés par Pléiades pour CE projet (RSET) : exacts, modulations HSP comprises
+        for k in ("Bbio_max", "Cep_max", "Cep_nr_max"):
+            seuils[k] = {**rp[k], "note": f"seuil calculé par Pléiades (outil : {seuils[k]['valeur']:g} approx)"}
+        seuils["approx"] = False
     estimation = estimer(entrees, "plan + dossier" if dossier.get("pages_lues") else "plan + hypothèses")
     choix_acv, src_acv = choix_constructifs(dossier, p)
     modes = {n["murs_exterieurs"]["isolation"]["valeur"][:3] for n in plan["niveaux"]}
@@ -305,6 +353,10 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     tertiaire = inf.get("residentiel", {}).get("valeur") is False
     qualite = qualite_lecture(plan, entrees, estimation, dossier)
     alertes = alertes_lieu + list(plan["alertes"]) + list(hyp.get("alertes", []))
+    if hyp.get("baies_par_orientation", {}).get("tag") == "lu":
+        alertes = [("Baies : surfaces par orientation lues dans le dossier et utilisées pour l'estimation "
+                    f"({hyp['baies_par_orientation']['note']}) ; les hauteurs supposées du plan ne servent qu'au repérage."
+                    if "baies sans étiquette" in a else a) for a in alertes]
     if qualite["niveau"] == "insuffisante":
         alertes.insert(0, "LECTURE DU PLAN INSUFFISANTE : " + " ; ".join(qualite["graves"])
                        + (". À fournir : " + " ; ".join(qualite["conseils"]) if qualite["conseils"] else ""))
@@ -332,11 +384,12 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
         acv["verdict"] = {k: "hors périmètre (tertiaire)" for k in acv["verdict"]}
 
     # données encore manquantes : on retire ce que le dossier a fourni
+    infd = dossier.get("infos", {})
     trouve = {"hauteurs": bool(dossier.get("hauteurs")), "compositions": bool(dossier.get("parois")),
-              "menuiseries": bool(dossier.get("menuiseries")), "systèmes": bool(dossier.get("chauffage"))}
-    manquants = [m for m in plan["manquants"]
-                 if not ((m.startswith("hauteurs") and trouve["hauteurs"]) or (m.startswith("compositions") and trouve["compositions"])
-                         or (m.startswith("menuiseries") and trouve["menuiseries"]) or (m.startswith("systèmes") and trouve["systèmes"]))]
+              "menuiseries": bool(dossier.get("menuiseries") or dossier.get("vitrages")),
+              "systèmes": bool(dossier.get("chauffage")), "type de toiture": bool(infd.get("type_toiture")),
+              "nature": bool(dossier.get("ponts_thermiques", {}).get("liaisons"))}
+    manquants = [m for m in plan["manquants"] if not any(m.startswith(k) and v for k, v in trouve.items())]
 
     params = asdict(p) | {"zone": zone, "altitude_m": float(alt_v), "date_pc": dpc_v}
     return {
@@ -348,6 +401,7 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
         "tertiaire": tertiaire,
         "qualite": qualite,
         "plan": plan,
+        "resultats_pleiades": (dossier or {}).get("resultats_pleiades") or {},
         "dossier": dossier,
         "controles": controles,
         "hypotheses": hyp,

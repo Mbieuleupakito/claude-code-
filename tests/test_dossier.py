@@ -122,3 +122,17 @@ def test_rset_pleiades_tableaux():
     assert "08000" in I["adresse"]["valeur"] and "altitude_m" not in I
     lect._tableau([["SRef / usage principal", "212,2 m2 / Maison individuelle", "", ""], ["Zone 1", "Maison", "212,2", "1"]], "rset.pdf p.4")
     assert lect.d["surfaces"]["sref"]["valeur"] == 212.2
+
+
+def test_nord_deduit_des_baies_par_orientation():
+    """Plan sans nord : la répartition des baies par côté de la feuille, comparée aux surfaces par orientation du RSET,
+    donne le nord (Charleville : grandes baies en bas = sud → nord en haut)."""
+    from re2020.etude import nord_par_baies
+
+    def b(cote, s):
+        return {"cote_feuille": cote, "surface_m2": {"valeur": s}}
+    plan = {"niveaux": [{"baies": [b("bas", 22), b("gauche", 19), b("droite", 13), b("haut", 1.8)]}]}
+    lu = {o: {"valeur": x} for o, x in {"S": 18.4, "O": 17.44, "N": 0.84, "E": 8.85}.items()}
+    assert nord_par_baies(plan, lu)["valeur"] == 0
+    tourne = {"niveaux": [{"baies": [b("gauche", 22), b("haut", 19), b("bas", 13), b("droite", 1.8)]}]}
+    assert nord_par_baies(tourne, lu)["valeur"] == 90

@@ -281,7 +281,7 @@ def equerre(env: Polygon) -> float:
     return meilleur
 
 
-def _facades(env: Polygon, k, long_min_m=0.3) -> list[Facade]:
+def _facades(env: Polygon, k, long_min_m=0.5) -> list[Facade]:
     coords = list(env.exterior.coords)[:-1]
     # fusion des sommets presque alignés
     pts = []
@@ -307,20 +307,41 @@ def _facades(env: Polygon, k, long_min_m=0.3) -> list[Facade]:
     return out
 
 
-def coins(env: Polygon) -> tuple[int, int]:
-    """(angles saillants, angles rentrants) du contour."""
+def coins(env: Polygon, k: float | None = None, court_m: float = 0.5) -> tuple[int, int]:
+    """(angles saillants, angles rentrants) du contour. Un décroché de moins de ``court_m`` (débord de poché à un
+    angle : un saillant + un rentrant collés) ne compte pas."""
     coords = list(env.exterior.coords)[:-1]
+    n = len(coords)
     signe = 1 if env.exterior.is_ccw else -1
-    conv = conc = 0
+    tours = []
     for i, c in enumerate(coords):
-        a, b = coords[i - 1], coords[(i + 1) % len(coords)]
-        cross = (c[0] - a[0]) * (b[1] - c[1]) - (c[1] - a[1]) * (b[0] - c[0])
-        if abs(cross) < 1e-6:
+        a, b = coords[i - 1], coords[(i + 1) % n]
+        v1, v2 = (c[0] - a[0], c[1] - a[1]), (b[0] - c[0], b[1] - c[1])
+        cross = v1[0] * v2[1] - v1[1] * v2[0]
+        norme = math.hypot(*v1) * math.hypot(*v2) or 1.0
+        tours.append(0 if abs(cross) / norme < math.sin(math.radians(20)) else (1 if cross * signe > 0 else -1))
+    if k:
+        for i in range(n):  # arête i → i+1 courte entre deux tours opposés : décroché parasite
+            j = (i + 1) % n
+            if math.dist(coords[i], coords[j]) * k < court_m and tours[i] * tours[j] == -1:
+                tours[i] = tours[j] = 0
+    return sum(t == 1 for t in tours), sum(t == -1 for t in tours)
+
+
+def coins_facades(facades: list) -> tuple[int, int]:
+    """Angles comptés entre façades consécutives (façades < 50 cm déjà écartées : les débords de poché ne comptent
+    pas). Deux façades parallèles qui se suivent = petit décroché, pas d'angle."""
+    conv = conc = 0
+    for i, f in enumerate(facades):
+        g = facades[(i + 1) % len(facades)]
+        cross = f.t[0] * g.t[1] - f.t[1] * g.t[0]
+        if abs(cross) < math.sin(math.radians(20)):
             continue
-        if cross * signe > 0:
-            conv += 1
-        else:
+        # normale extérieure : on tourne vers l'extérieur (angle rentrant) si la façade suivante part du côté de n
+        if g.t[0] * f.n[0] + g.t[1] * f.n[1] > 0:
             conc += 1
+        else:
+            conv += 1
     return conv, conc
 
 
@@ -414,7 +435,7 @@ def analyser_facades(vue: Vue, hachures, k, ouverture_min_m=0.25):
     d = vue.ep_struct_pt + vue.ep_int_pt
     inter = vue.enveloppe.buffer(-d, join_style="mitre", mitre_limit=10) if d > 0 else vue.enveloppe
     vue.interieur = max(polygones(inter), key=lambda g: g.area) if polygones(inter) else None
-    vue.convexes, vue.concaves = coins(vue.enveloppe)
+    vue.convexes, vue.concaves = coins_facades(vue.facades) if len(vue.facades) >= 3 else coins(vue.enveloppe, k)
     vue.refends = _refends(vue, k)
 
 

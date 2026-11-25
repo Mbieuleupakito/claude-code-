@@ -429,7 +429,7 @@ class _Extraction:
             l_int = f.longueur_pt * k - d_int * (_signe_coin(prev, f, v) + _signe_coin(f, nxt, v))
             fd = {"id": f"F{jf + 1}", "cote_feuille": f.nom_cote,
                   "longueur_ext_m": val(round(f.longueur_pt * k, 2), "déduit", "contour extérieur des murs", "haute", "m"),
-                  "longueur_int_m": val(round(l_int, 2), "déduit", "contour - épaisseurs aux angles", "moyenne", "m"),
+                  "longueur_int_m": val(round(max(l_int, 0.0), 2), "déduit", "contour - épaisseurs aux angles", "moyenne", "m"),
                   "couche_pleine_m": round(f.ep_pt * k, 3),
                   "bande_ext_m": round(f.ext_pt * k, 3), "bande_int_m": round(f.int_pt * k, 3)}
             if angle is not None:

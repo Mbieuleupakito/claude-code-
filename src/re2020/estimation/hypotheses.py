@@ -50,7 +50,14 @@ def entrees_depuis_plan(plan: dict, zone: str, altitude_m: float, sref: float | 
         hyp["Sref"] = sref_lu
     elif sref is None:
         sref = bat["surface_interieure_totale_m2"]["valeur"]
-        hyp["Sref"] = val(sref, "déduit", "surface intérieure totale du plan (≈ Sref)", "moyenne", "m²")
+        pieces = (bat.get("surface_pieces_etiquetees_totale_m2") or {}).get("valeur") or 0
+        if 0.75 * sref <= pieces <= 1.02 * sref:
+            # pièces étiquetées sur tout le plan : leur somme est la surface habitable, plus proche de la Sref en MI
+            sref = pieces
+            hyp["Sref"] = val(sref, "lu", "somme des surfaces de pièces écrites sur les plans (SHAB)", "moyenne", "m²",
+                              note=f"surface intérieure mesurée : {bat['surface_interieure_totale_m2']['valeur']} m²")
+        else:
+            hyp["Sref"] = val(sref, "déduit", "surface intérieure totale du plan (≈ Sref)", "moyenne", "m²")
     else:
         hyp["Sref"] = val(sref, "lu", "fourni par le thermicien", "haute", "m²")
 
@@ -85,8 +92,8 @@ def entrees_depuis_plan(plan: dict, zone: str, altitude_m: float, sref: float | 
     total += psi_men["valeur"] * L_men
     detail_pt.append({"liaison": "menuiseries / mur (appui + linteau + tableaux)", "longueur_m": round(L_men, 1), "psi": psi_men})
     hyp["ponts_thermiques"] = detail_pt
-    hyp["menuiseries_retour_isolant"] = val(h["retour_isolant_menuiseries"], "lu" if "retour_isolant_menuiseries" in choix else "supposé",
-                                            "choix du thermicien" if "retour_isolant_menuiseries" in choix else "bonne pratique ITE", "faible")
+    hyp["menuiseries_retour_isolant"] = val(h["retour_isolant_menuiseries"], "lu" if choix.get("retour_isolant_menuiseries") is not None else "supposé",
+                                            "choix du thermicien" if choix.get("retour_isolant_menuiseries") is not None else "bonne pratique ITE", "faible")
     hyp["ratio_psi"] = val(round(total / sref, 3), "déduit", "Σ ψ·L / Sref", "moyenne", "W/(m².K)",
                            note="exigence art. 22.II : <= 0,33")
     hyp["alertes"] = []
@@ -95,7 +102,8 @@ def entrees_depuis_plan(plan: dict, zone: str, altitude_m: float, sref: float | 
                               "(retour d'isolant en tableau, rupteurs) ou justifier par l'art. 22.I.")
 
     systeme = next((s for s in cat.systemes() if s["nom"] == h["systeme"]), cat.systemes()[0])
-    hyp["systeme"] = val(systeme["nom"], "lu" if "systeme" in choix else "supposé", "choix du thermicien" if "systeme" in choix else "système courant en maison individuelle", "moyenne" if "systeme" in choix else "faible")
+    saisi = choix.get("systeme") is not None  # la clé existe toujours (None si non saisi)
+    hyp["systeme"] = val(systeme["nom"], "lu" if saisi else "supposé", "choix du thermicien" if saisi else "système courant en maison individuelle (non lu : pas de notice)", "moyenne" if saisi else "faible")
     hyp["q4"] = val(h["q4"], "supposé", "perméabilité visée (exigence MI : 0,6)", "moyenne", "m³/(h.m²)")
 
     e = Entrees(sref=sref, zone=zone, altitude_m=altitude_m, surfaces=surfaces,

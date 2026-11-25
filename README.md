@@ -29,6 +29,12 @@ puis `docker compose up -d` → http://<serveur>:8000 pour tout le monde (étude
 - Écarts du modèle avec Pléiades : `.venv/bin/python -m re2020.estimation.references`
 - WeasyPrint peut afficher un avertissement « HarfBuzz-Subset » : sans effet.
 
+## Serveur MCP 21st (composants d'interface, pour le futur frontend)
+Déclaré dans `.mcp.json` (serveur HTTP `https://21st.dev/api/mcp`). Clé gratuite sur https://21st.dev/mcp, puis :
+- Windows : `setx API_KEY_21ST "ta_cle"` (rouvrir le terminal) — Mac/Linux : `export API_KEY_21ST=ta_cle` ;
+- relancer Claude Code dans le dossier du projet et accepter le serveur « 21st » (`/mcp` pour vérifier).
+Ne jamais lui envoyer de plans ou de données clients (règle 5) : il ne sert qu'à l'interface.
+
 ## ACV : remplacer les ordres de grandeur par les vraies fiches
 Les valeurs de `data/catalogues/fiches_acv.json` sont supposées. Remplir `data/catalogues/fiches_acv_modele.csv`
 (export INIES / Pléiades) puis : `cat = CatalogueACV(); cat.importer_csv("mes_fiches.csv")` → les fiches passent en « lu ».

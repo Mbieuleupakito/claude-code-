@@ -97,11 +97,19 @@ class _Lecteur:
             self._menuiseries(lignes, src)
         elif ("up" in h or "u " in h or "w/(" in h) and ("designation" in h or "composition" in h):
             self._parois(lignes, src)
+        else:  # tableau large clé | valeur | … (RSET : « SRef / usage principal | 212,2 m2 / Maison… ») : clés connues seulement
+            self._cle_valeur([[r[0], next((c for c in r[1:] if c), "")] for r in lignes], src)
 
     def _cle_valeur(self, lignes, src):
+        bloc = None  # bloc en cours : intervenant (maître d'ouvrage, architecte, BET…) ou opération (le chantier)
         for cle, v in lignes:
             k = _sa(cle)
             I, S = self.d["infos"], self.d["surfaces"]
+            if re.match(r"(maitre d.?(ouvrage|oeuvre|œuvre)|bureau d|architecte|economiste|controleur|bureau de controle|"
+                        r"contact|entreprise|promoteur|constructeur)", k):
+                bloc = "intervenant"
+            elif re.match(r"(operation|projet|chantier|terrain|batiment|description|nom de l.?operation)", k):
+                bloc = "operation"
             if not v:
                 continue
             if k.startswith("usage"):
@@ -114,6 +122,9 @@ class _Lecteur:
                         I["zone"] = self.lu(z, src)
                 if "altitude" in k and (m := re.search(r"(\d+)\s*m\b", v)):
                     I["altitude_m"] = self.lu(float(m.group(1)), src, "m", note="fictive" if "fictiv" in _sa(v) else None)
+            elif k.startswith("altitude") and re.search(r"\bentre\b|<|>|inf[ée]rieur|sup[ée]rieur|classe", v, re.I):
+                # « Entre 0 et 400m inclus » : classe d'altitude, pas une altitude (la cote NGF ou la commune la donnera)
+                I["altitude_classe"] = self.lu(v, src)
             elif k.startswith("altitude") and (m := re.search(r"(\d+)\s*m\b", v)):
                 I["altitude_m"] = self.lu(float(m.group(1)), src, "m")
             elif "depot" in k and "pc" in k:
@@ -127,8 +138,12 @@ class _Lecteur:
             elif "occupant" in k:
                 I["occupants"] = self.lu(_nb(v), src)
             elif k.startswith(("adresse", "commune", "localisation", "lieu", "situation")):
-                I.setdefault("adresse", self.lu(v, src))
-                self.d["localisation_candidats"] += candidats_lieu(f"adresse du projet : {v}", src, 3.0)
+                if bloc == "intervenant":  # adresse du maître d'ouvrage, de l'architecte, du BET : pas le chantier
+                    self.d["localisation_candidats"] += candidats_lieu(v, src, 0.3)
+                    continue
+                if bloc == "operation" or "adresse" not in I:
+                    I["adresse"] = self.lu(v, src)
+                self.d["localisation_candidats"] += candidats_lieu(f"adresse du projet : {v}", src, 4.0 if bloc == "operation" else 3.0)
             elif "bruit" in k:
                 I["exposition_bruit"] = self.lu(v, src)
             elif "emprise" in k:
@@ -191,18 +206,33 @@ class _Lecteur:
             })
 
     def _ponts(self, lignes, src):
+        """Tableau Ψ·L. Colonnes repérées par l'en-tête (RSET Pléiades : type | libellé | Psi | origine | linéaire) ;
+        sinon ordre courant liaison | Ψ | L | Ψ·L. Les « Total linéaire catégorie » sont des sous-totaux de longueur."""
         P = self.d["ponts_thermiques"]
+        tete = [_sa(c or "") for c in lignes[0]]
+        def col(test, defaut=None):
+            return next((i for i, c in enumerate(tete) if test(c)), defaut)
+        ipsil = col(lambda c: re.search(r"psi ?[x.·*]? ?l\b|ψ ?[x.·*]? ?l\b|w/k", c))
+        ipsi = col(lambda c: ("psi" in c or "ψ" in c or "w/(m.k)" in c or "w/m.k" in c) and "origine" not in c
+                   and not re.search(r"psi ?[x.·*]? ?l\b|ψ ?[x.·*]? ?l\b|w/k", c), 1)
+        il = col(lambda c: c.startswith(("lineaire", "longueur", "l (m", "l(m")) or c in ("l", "l (ml)"), 2)
+        ilib = col(lambda c: "libelle" in c)
         for r in lignes[1:]:
+            r = [c or "" for c in r]
             nom = r[0]
+            if _sa(nom).startswith("total lineaire"):
+                continue
             if _sa(nom).startswith("total"):
                 tot = next((_nb(c) for c in reversed(r[1:]) if _nb(c) is not None), None)
-                if tot is not None:  # « Total | | » sans valeur : on recalcule plus bas
-                    P["total_W_K"] = self.lu(tot, src, "W/K")
+                if tot is not None and (ipsil is None or _nb(r[ipsil]) is not None):  # « Total | | » sans valeur : recalculé
+                    P["total_W_K"] = self.lu(_nb(r[ipsil]) if ipsil is not None else tot, src, "W/K")
                 continue
-            psi, L, pl = (_nb(r[1]), _nb(r[2]) if len(r) > 2 else None, _nb(r[3]) if len(r) > 3 else None)
+            g = lambda i: _nb(r[i]) if i is not None and i < len(r) else None
+            psi, L, pl = g(ipsi), g(il), g(ipsil)
             if psi is None:
                 continue
-            P["liaisons"].append({"liaison": nom, "psi": self.lu(psi, src, "W/m.K"),
+            lib = f"{nom} — {r[ilib]}" if ilib is not None and r[ilib] else nom
+            P["liaisons"].append({"liaison": " ".join(lib.split()), "psi": self.lu(psi, src, "W/m.K"),
                                   "longueur_m": self.lu(L, src, "m") if L is not None else None,
                                   "psi_L": self.lu(pl if pl is not None else (psi * L if L else None), src, "W/K")})
         if "total_W_K" not in P and P["liaisons"]:
@@ -296,7 +326,9 @@ class _Lecteur:
                 L["detection_presence"] = self.lu("detection de presence" in s, src)
         if "production locale" in s and "production_locale" not in self.d["infos"]:
             m = re.search(r"production locale[^:]*:\s*([^.(]+)", t, re.I)
-            if m:
+            # une vraie réponse (« panneaux photovoltaïques 3 kWc », « aucune ») et pas une définition de l'indicateur
+            if m and re.search(r"photovolt|\bpv\b|solaire|[ée]olien|cog[ée]n|aucun|\bnon\b|kwc|kwh", m.group(1), re.I) \
+                    and not re.search(r"refroidissement|d[ée]placement|cep", m.group(1), re.I):
                 self.d["infos"]["production_locale"] = self.lu(m.group(1).strip(), src)
         for m in re.finditer(r"\b(\d{2})/(\d{2})/(20\d{2})\b", t):
             if 1 <= int(m.group(2)) <= 12 and 1 <= int(m.group(1)) <= 31:

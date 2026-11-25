@@ -102,3 +102,23 @@ def test_garde_fou_lecture_insuffisante():
     assert set(e["verdict"].values()) == {"lecture insuffisante"}
     assert e["alertes"][0].startswith("LECTURE DU PLAN INSUFFISANTE")
     assert any("notice" in c for c in e["qualite"]["conseils"])
+
+
+def test_rset_pleiades_tableaux():
+    """RSET Pléiades : Ψ en 3e colonne et linéaire en 5e, sous-totaux de longueur ignorés ; adresse du maître
+    d'ouvrage ≠ adresse du chantier ; « Entre 0 et 400m » = classe d'altitude, pas 400 m."""
+    from re2020.documents.lecture import _Lecteur
+
+    lect = _Lecteur()
+    lect._tableau([["Type de liaison", "Libellé liaison", "Psi liaison (W/m.K)", "Origine de la donnée du psi", "Linéaires (ml)", "Donnant sur"],
+                   ["mur avec plancher bas", "ITE 1.1.01-Dallage isolé ψ1", "0,6", "Th Bât", "45,02", "L'extérieur"],
+                   ["Total linéaire catégorie type de liaison :", None, None, None, "45,02", ""],
+                   ["liaison angle de mur", "ITE 4.1.3 ψ1", "0,05", "Th Bât", "22,34", "L'extérieur"]], "rset.pdf p.12")
+    P = lect.d["ponts_thermiques"]
+    assert [(l["psi"]["valeur"], l["longueur_m"]["valeur"]) for l in P["liaisons"]] == [(0.6, 45.02), (0.05, 22.34)]
+    lect._cle_valeur([["Maître d'ouvrage", ""], ["Adresse", "28 Avenue X 75016 Paris"], ["Opération", ""],
+                      ["Adresse", "3 Chemin Y 08000 Charleville-Mézières"], ["Altitude", "Entre 0 et 400m inclus"]], "rset.pdf p.3")
+    I = lect.d["infos"]
+    assert "08000" in I["adresse"]["valeur"] and "altitude_m" not in I
+    lect._tableau([["SRef / usage principal", "212,2 m2 / Maison individuelle", "", ""], ["Zone 1", "Maison", "212,2", "1"]], "rset.pdf p.4")
+    assert lect.d["surfaces"]["sref"]["valeur"] == 212.2

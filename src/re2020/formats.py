@@ -270,6 +270,12 @@ def preparer(fichiers: list, dossier_travail: Path | None = None) -> dict:
                 plans.append(f)
                 docs.append(f)
             elif ext in (".dxf", ".dwg"):
+                from .plans.extraction import vue_non_plan
+
+                if vue_non_plan(f.name, "") == "élévation":
+                    # les élévations DWG ne servent pas encore (hauteurs de baies : à venir) : on ne les convertit pas
+                    non_lus.append((f.name, "élévation DWG/DXF : pas un plan de niveau, non utilisée (utiliser le PDF des élévations)"))
+                    continue
                 dxf = dwg_vers_dxf(f, travail) if ext == ".dwg" else f
                 try:
                     cv = cotes_verticales(dxf)
@@ -277,6 +283,11 @@ def preparer(fichiers: list, dossier_travail: Path | None = None) -> dict:
                         cotes.append((f.name, cv))
                 except Exception:
                     pass
+                if vue_non_plan(f.name, ""):
+                    # élévation / coupe : seules ses cotes servent (HSP) ; la redessiner en PDF coûte cher pour rien
+                    if not any(n == f.name for n, _ in cotes):
+                        non_lus.append((f.name, "élévation / coupe DWG-DXF : cotes lues, pas de plan de niveau"))
+                    continue
                 pdf = dxf_vers_pdf(dxf, travail / (f.stem + "_dxf.pdf"))
                 plans.append(pdf)
                 docs.append(pdf)

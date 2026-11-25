@@ -23,6 +23,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
+from starlette.concurrency import run_in_threadpool
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -196,7 +197,7 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
         noms = " + ".join(n for n, _ in contenus)
         ligne = [i, datetime.now().isoformat(timespec="seconds"), projet, noms, json.dumps(p.__dict__)]
         try:
-            e = realiser_etude(chemins, p, catalogue, dossier_travail=d)
+            e = await run_in_threadpool(realiser_etude, chemins, p, catalogue, dossier_travail=d)
         except (ValueError, KeyError) as exc:
             db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "erreur", str(exc), None))
             db.commit()
@@ -217,11 +218,11 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
         (d / "etude.json").write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
         (d / "feuille_de_route.html").write_text(generer_html(e), encoding="utf-8")
         try:
-            generer_pdf(e, d / "feuille_de_route.pdf")
+            await run_in_threadpool(generer_pdf, e, d / "feuille_de_route.pdf")
         except Exception:  # WeasyPrint sans ses bibliothèques système (souvent sous Windows) : HTML imprimable
             pass
         plans = [d / n if (d / n).exists() else next(d.glob(f"*{n}")) for n in e["fichiers"]["plans"]]
-        image_controle(plans, e["plan"], d / "controle.png")
+        await run_in_threadpool(image_controle, plans, e["plan"], d / "controle.png")
         synthese = {"verdict": e["verdict"], "Bbio": e["estimation"]["Bbio"], "Cep": e["estimation"]["Cep"],
                     "Cep_nr": e["estimation"]["Cep_nr"], "seuils": {k: e["seuils"][k]["valeur"] for k in ("Bbio_max", "Cep_max", "Cep_nr_max")},
                     "seuils_approx": e["seuils"]["approx"], "alertes": e["alertes"],

@@ -204,7 +204,11 @@ def vues_en_plan(murs_pg, k, fermeture_m=1.6, part_min=0.15, surface_min_m2=9.0)
     for zone in groupes:
         membres = [g for g in polygones(union) if g.intersects(zone)]
         plus_grand = max(g.area for g in membres)
-        gardes = [g for g in membres if g.area >= part_min * plus_grand]  # écarte murets et éléments isolés
+        gros = [g for g in membres if g.area >= part_min * plus_grand]
+        coque = unary_union(gros).convex_hull.buffer(0.3 / k)
+        # les petits morceaux gardés sont ceux DANS l'emprise (tronçon de mur entre deux baies) ;
+        # ceux dehors (muret de terrasse, clôture) sont écartés
+        gardes = gros + [g for g in membres if g.area < part_min * plus_grand and g.intersection(coque).area >= 0.8 * g.area]
         if not gardes:
             continue
         ferme = fermeture(unary_union(gardes), r)

@@ -402,7 +402,7 @@ function SectionDossier({ e }: { e: Etude }) {
     <section id="dossier" className="section">
       <h2>Dossier lu</h2>
       <p className="section-intro">
-        Données écrites dans le dossier (notice, tableaux, coupe), utilisées à la place des hypothèses. Pages exploitées : {d.pages_lues?.join(", ")}
+        Données écrites dans le dossier (notice, tableaux, coupe), utilisées à la place des hypothèses. Pages et fichiers exploités : {d.pages_lues?.join(", ")}
         {e.plan.pages_plans?.length ? ` · plans : ${e.plan.pages_plans.join(", ")}` : ""}.
       </p>
       <div className="pile">

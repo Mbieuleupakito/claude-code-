@@ -228,3 +228,76 @@ def generer_dossier_peint(chemin):
         w.append(part)
     with open(chemin, "wb") as fh:
         w.write(fh)
+
+
+def generer_dxf(chemin):
+    """Plan DXF « d'agence » : murs en simples traits sur le calque MURS (contours fermés), baies laissées en
+    trous avec étiquettes sur le calque TEXTE, symbole du nord en bloc (cercle + flèche), titre de niveau.
+    Maison 10 x 8 m extérieur, murs 30 cm, unités en mètres."""
+    import ezdxf
+    from shapely.geometry import Polygon, box
+    from shapely.ops import unary_union
+
+    doc = ezdxf.new("R2018", setup=True)
+    doc.header["$INSUNITS"] = 6
+    for nom, couleur in (("MURS", 7), ("MENUISERIES", 4), ("TEXTE", 7), ("NORD", 7)):
+        doc.layers.add(nom, color=couleur)
+    msp = doc.modelspace()
+    ext = Polygon([(0, 0), (10, 0), (10, 8), (0, 8)])
+    mur = ext.difference(ext.buffer(-0.30, join_style="mitre"))
+    trous = [box(2, -0.1, 3.2, 0.4), box(6, -0.1, 8.0, 0.4), box(9.6, 5, 10.1, 6.0)]   # F1, PF1 (sud = bas), F2 (est)
+    for pg in getattr(mur.difference(unary_union(trous)), "geoms", []):
+        msp.add_lwpolyline(list(pg.exterior.coords), close=True, dxfattribs={"layer": "MURS"})
+    for (xa, xb) in ((2, 3.2), (6, 8.0)):
+        msp.add_line((xa, 0.15), (xb, 0.15), dxfattribs={"layer": "MENUISERIES"})
+    msp.add_line((9.85, 5), (9.85, 6.0), dxfattribs={"layer": "MENUISERIES"})
+    t = {"layer": "TEXTE", "height": 0.18}
+    for x, y, lignes in ((2.6, -0.6, ("F1", "120 x 135ht.", "all.90")), (7.0, -0.6, ("PF1", "200 x 215ht.", "all.0")),
+                         (10.6, 5.5, ("F2", "100 x 125ht.", "all.100"))):
+        for i, l in enumerate(lignes):
+            msp.add_text(l, dxfattribs={**t, "insert": (x - 0.4, y - 0.3 * i)})
+    msp.add_text("RDC", dxfattribs={"layer": "TEXTE", "height": 0.4, "insert": (0, -2.2)})
+    msp.add_text("Séjour", dxfattribs={**t, "insert": (3, 4)})
+    msp.add_text("40.5 m²", dxfattribs={**t, "insert": (3, 3.7)})
+    blk = doc.blocks.new("NORD")
+    blk.add_circle((0, 0), 0.5)
+    blk.add_line((0, -0.5), (0, 0.5))
+    blk.add_line((0, 0.5), (-0.15, 0.25))
+    blk.add_line((0, 0.5), (0.15, 0.25))
+    msp.add_blockref("NORD", (12, 9), dxfattribs={"layer": "NORD"})
+    doc.saveas(str(chemin))
+
+
+def generer_notice_docx(chemin):
+    import docx
+
+    d = docx.Document()
+    d.add_heading("Notice thermique", 1)
+    t = d.add_table(rows=0, cols=2)
+    for k, v in (("Usage", "Maison individuelle"), ("Zone climatique / altitude", "H3 / 120 m"), ("Date du dépôt de PC", "02/03/2027"),
+                 ("Q4", "0,6 m³/(h.m²)")):
+        r = t.add_row().cells
+        r[0].text, r[1].text = k, v
+    d.add_paragraph("")
+    t = d.add_table(rows=1, cols=3)
+    t.rows[0].cells[0].text, t.rows[0].cells[1].text, t.rows[0].cells[2].text = "Réf.", "Désignation", "Up W/(m².K)"
+    for ref, des, up in (("M1", "Mur extérieur béton ITE", "0,19"), ("T1", "Toiture combles perdus", "0,10")):
+        r = t.add_row().cells
+        r[0].text, r[1].text, r[2].text = ref, des, up
+    d.add_paragraph("6. Ventilation")
+    d.add_paragraph("VMC simple flux hygroréglable B.")
+    d.add_paragraph("7. Chauffage")
+    d.add_paragraph("Chauffage par pompe à chaleur air/eau, émission par plancher chauffant.")
+    d.save(str(chemin))
+
+
+def generer_notice_xlsx(chemin):
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Menuiseries"
+    ws.append(["Repère", "Désignation", "Performance globale", "Quantité"])
+    ws.append(["F", "Fenêtre 1,20 × 1,35 m g ≥ 0,45", "Uw ≤ 1,20", "2 (3,24 m²)"])
+    ws.append(["PF", "Porte-fenêtre 2,00 × 2,15 m g ≥ 0,50", "Uw ≤ 1,40", "1 (4,30 m²)"])
+    wb.save(str(chemin))

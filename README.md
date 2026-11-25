@@ -8,7 +8,7 @@ Voir CLAUDE.md pour le projet. Tout tourne en local : les plans clients ne quitt
 3. Double-cliquer :
    - Windows : **`lancer.bat`** — Mac : **`lancer.command`** (Linux : `./lancer.command`).
    La première fois, il installe tout (quelques minutes). Ensuite le navigateur s'ouvre sur http://127.0.0.1:8000.
-4. Déposer **tout le dossier** (plans, coupe, notice thermique : un ou plusieurs PDF) → **Lancer l'étude**. Zone,
+4. Déposer **tout le dossier** (plans en PDF, DXF ou DWG ; coupe ; notice en PDF, Word ou Excel) → **Lancer l'étude**. Zone,
    altitude, date de PC, Sref, parois, menuiseries, Ψ, ventilation, systèmes, hauteurs sont lus dans les documents
    (les saisir seulement s'ils manquent). La fiche montre les **contrôles croisés** plan mesuré / dossier écrit.
    Les études restent listées dans « Mes études » (dossier `etudes/`).
@@ -51,3 +51,8 @@ une interface qui fait « générée par IA ». Disponible automatiquement dans 
 ## ACV : remplacer les ordres de grandeur par les vraies fiches
 Les valeurs de `data/catalogues/fiches_acv.json` sont supposées. Remplir `data/catalogues/fiches_acv_modele.csv`
 (export INIES / Pléiades) puis : `cat = CatalogueACV(); cat.importer_csv("mes_fiches.csv")` → les fiches passent en « lu ».
+
+## Fichiers DWG
+Le DWG est un format fermé : il est converti en DXF **sur ce poste** si **ODA File Converter** (gratuit) est installé
+(https://www.opendesign.com/guestfiles/oda_file_converter), ou LibreDWG (`dwg2dxf`). Sinon l'outil le signale et lit le
+reste du dossier. Rien n'est envoyé sur Internet.

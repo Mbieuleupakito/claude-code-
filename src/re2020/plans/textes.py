@@ -305,3 +305,13 @@ def lire_nord_texte(texte: str) -> float | None:
     """« NORD ↑ » → 0° (nord vers le haut de la feuille)."""
     m = re.search(r"\b(?:nord|N)\s*([↑⬆↗→➡↘↓⬇↙←⬅↖])", texte, re.I)
     return FLECHES[m.group(1)] if m else None
+
+
+def famille(nom: str | None) -> str:
+    """Famille d'une baie pour la rapprocher d'une notice : « F1 » → « F », « PF12b » → « PF », « Mext21 » → « MEXT »."""
+    return re.sub(r"\d+[A-Z]?$", "", (nom or "").upper().strip())
+
+
+def meme_repere(nom_plan: str | None, repere: str) -> bool:
+    n, r = (nom_plan or "").upper().strip(), repere.upper().strip()
+    return n == r or famille(n) == r

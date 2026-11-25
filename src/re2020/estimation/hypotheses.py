@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from ..catalogues import Catalogue
 from ..catalogues.parois import u_paroi
+from ..plans.textes import famille
 from ..trace import val
 from .modele import Entrees
 
@@ -132,7 +133,7 @@ def appliquer_dossier(e: Entrees, hyp: dict, plan: dict, dossier: dict, choix: d
         a_tot = su = ssw = 0.0
         for n in plan["niveaux"]:
             for b in n["baies"]:
-                m = men.get((b["nom"] or "").upper())
+                m = men.get((b["nom"] or "").upper()) or men.get(famille(b["nom"]))
                 a = b["surface_m2"]["valeur"]
                 if not m or not m.get("U"):
                     continue

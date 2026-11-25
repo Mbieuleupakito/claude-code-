@@ -44,11 +44,14 @@ def test_etude_complete(client, plan_pdf):
     assert any(e["id"] == j["id"] and e["statut"] == "ok" for e in client.get("/api/etudes").json())
 
 
-def test_formats_refuses(client):
-    for nom, msg in (("plan.dwg", "DWG"), ("plan.dxf", "DXF"), ("plan.pdf", "pas un PDF")):
-        r = client.post("/api/etudes", files={"fichier": (nom, b"garbage", "application/octet-stream")},
-                        data={"zone": "H1b", "altitude_m": "150", "date_pc": "2026-11-17"})
-        assert r.status_code == 415 and msg in r.json()["detail"]
+def test_formats(client):
+    base = {"zone": "H1b", "altitude_m": "150", "date_pc": "2026-11-17"}
+    r = client.post("/api/etudes", files={"fichier": ("plan.exe", b"MZ", "application/octet-stream")}, data=base)
+    assert r.status_code == 415 and "non pris en charge" in r.json()["detail"]
+    r = client.post("/api/etudes", files={"fichier": ("plan.pdf", b"garbage", "application/pdf")}, data=base)
+    assert r.status_code == 415 and "pas un vrai PDF" in r.json()["detail"]
+    r = client.post("/api/etudes", files={"fichier": ("plan.dwg", b"AC1032", "application/octet-stream")}, data=base)
+    assert r.status_code == 422 and "ODA File Converter" in r.json()["detail"]   # DWG accepté, converti s'il y a l'outil
 
 
 def test_plan_sans_murs(client):

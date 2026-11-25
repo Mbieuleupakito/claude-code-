@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, type Config } from "@/lib/api";
 
+const FORMATS = ["pdf", "dxf", "dwg", "docx", "xlsx", "xlsm", "txt", "csv", "png", "jpg", "jpeg", "tif", "tiff"];
+
 export default function NouvelleEtude() {
   const router = useRouter();
   const [config, setConfig] = useState<Config | null>(null);
@@ -23,9 +25,8 @@ export default function NouvelleEtude() {
     if (!liste?.length) return;
     const ajout: File[] = [];
     for (const f of Array.from(liste)) {
-      const nom = f.name.toLowerCase();
-      if (nom.endsWith(".dwg")) return setErreur("Les fichiers DWG ne sont pas lus : demander un PDF vectoriel à l'architecte");
-      if (!nom.endsWith(".pdf")) return setErreur(`« ${f.name} » n'est pas un PDF`);
+      const ext = f.name.toLowerCase().split(".").pop() ?? "";
+      if (!FORMATS.includes(ext)) return setErreur(`« ${f.name} » : format non pris en charge (${FORMATS.join(", ")})`);
       ajout.push(f);
     }
     setFichiers((avant) => [...avant, ...ajout.filter((f) => !avant.some((a) => a.name === f.name && a.size === f.size))]);
@@ -33,7 +34,7 @@ export default function NouvelleEtude() {
 
   async function envoyer(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
-    if (!fichiers.length) return setErreur("Ajouter au moins un PDF : plans, et si possible la notice thermique");
+    if (!fichiers.length) return setErreur("Ajouter au moins un plan (PDF, DXF ou DWG), et si possible la notice thermique");
     const fd = new FormData(ev.currentTarget);
     for (const [k, v] of Array.from(fd.entries())) if (v === "") fd.delete(k);
     fd.delete("fichiers");
@@ -61,7 +62,7 @@ export default function NouvelleEtude() {
       <form onSubmit={envoyer} className="pile">
         <section className="carte carte-corps pile" style={{ gap: 16 }}>
           <h2>Dossier du projet</h2>
-          <p className="second" style={{ marginTop: -8 }}>Plans, coupe, notice thermique, tableaux : tout est lu. Plus le dossier est complet, plus le résultat est précis</p>
+          <p className="second" style={{ marginTop: -8 }}>Plans (PDF, DXF, DWG), coupe, notice thermique (PDF, Word, Excel) : tout est lu. Plus le dossier est complet, plus le résultat est précis</p>
           {fichiers.map((f) => (
             <div className="depot rempli" key={f.name + f.size}>
               <div>
@@ -78,10 +79,10 @@ export default function NouvelleEtude() {
             onDragLeave={() => setSurvol(false)}
             onDrop={(e) => { e.preventDefault(); setSurvol(false); choisir(e.dataTransfer.files); }}>
             <FileUp strokeWidth={1.5} />
-            <strong>{fichiers.length ? "Ajouter d'autres PDF" : "Déposer les PDF ici"}</strong>
-            <span className="muet">ou cliquer pour les choisir · PDF vectoriels, un ou plusieurs fichiers</span>
+            <strong>{fichiers.length ? "Ajouter d'autres fichiers" : "Déposer les fichiers du dossier ici"}</strong>
+            <span className="muet">ou cliquer pour les choisir · PDF, DXF, DWG, Word, Excel · un ou plusieurs fichiers</span>
           </div>
-          <input ref={entreeFichier} type="file" accept=".pdf,application/pdf" multiple hidden onChange={(e) => { choisir(e.target.files); e.target.value = ""; }} />
+          <input ref={entreeFichier} type="file" accept=".pdf,.dxf,.dwg,.docx,.xlsx,.xlsm,.txt,.csv,.png,.jpg,.jpeg,.tif,.tiff" multiple hidden onChange={(e) => { choisir(e.target.files); e.target.value = ""; }} />
         </section>
 
         <section className="carte carte-corps pile" style={{ gap: 16 }}>

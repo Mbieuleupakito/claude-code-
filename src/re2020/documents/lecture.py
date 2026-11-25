@@ -294,26 +294,83 @@ class _Lecteur:
             self.d["hauteurs"].setdefault(k, self.lu(v, src, "m"))
 
 
+def _lire_pdf(lect: _Lecteur, ch: Path):
+    with pdfplumber.open(ch) as pdf:
+        pages = [(i, p, p.extract_text() or "") for i, p in enumerate(pdf.pages)]
+        # la notice (données du projet) passe avant les autres pages (exercices, annexes) qui pourraient la contredire
+        pages.sort(key=lambda x: (0 if re.search(r"notice|cctp|descriptif", x[2], re.I) else 1, x[0]))
+        for i, p, txt in pages:
+            _lire_bloc(lect, f"{ch.name} p.{i + 1}", p.extract_tables(), txt)
+
+
+def _lire_bloc(lect: _Lecteur, src: str, tableaux: list, txt: str):
+    lect.section = ""
+    n_avant = len(str(lect.d))
+    for t in tableaux:
+        lect.tableau(t, src)
+    # texte libre, paragraphe par paragraphe (puces, lignes vides)
+    for bloc in re.split(r"\n(?=\(cid:127\)|•|-\s|\d+\.\s)", txt):
+        lect.texte(bloc.replace("(cid:127)", "").replace("\n", " "), src)
+    if len(str(lect.d)) > n_avant:
+        lect.d["pages_lues"].append(src)
+
+
+def _lire_docx(lect: _Lecteur, ch: Path):
+    import docx
+
+    d = docx.Document(str(ch))
+    tableaux = [[[c.text for c in r.cells] for r in t.rows] for t in d.tables]
+    texte = "\n".join(p.text for p in d.paragraphs)
+    _lire_bloc(lect, ch.name, tableaux, texte)
+
+
+def _lire_xlsx(lect: _Lecteur, ch: Path):
+    import openpyxl
+
+    wb = openpyxl.load_workbook(str(ch), data_only=True, read_only=True)
+    for ws in wb.worksheets:
+        lignes = [["" if v is None else (f"{v:g}".replace(".", ",") if isinstance(v, float) else str(v)) for v in r]
+                  for r in ws.iter_rows(values_only=True)]
+        tableaux, cour = [], []
+        for r in lignes + [[]]:  # une ligne vide sépare deux tableaux
+            if any(c.strip() for c in r):
+                cour.append(r)
+            elif cour:
+                tableaux.append(cour)
+                cour = []
+        texte = "\n".join(" ".join(c for c in r if c) for r in lignes)
+        _lire_bloc(lect, f"{ch.name} ({ws.title})", tableaux, texte)
+
+
+def _lire_texte(lect: _Lecteur, ch: Path):
+    import csv
+
+    brut = ch.read_bytes()
+    for enc in ("utf-8-sig", "cp1252", "latin-1"):
+        try:
+            texte = brut.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    tableaux = []
+    if ch.suffix.lower() == ".csv":
+        sep = ";" if texte.count(";") > texte.count(",") else ","
+        tableaux = [list(csv.reader(texte.splitlines(), delimiter=sep))]
+    _lire_bloc(lect, ch.name, tableaux, texte)
+
+
+LECTEURS = {".pdf": _lire_pdf, ".docx": _lire_docx, ".xlsx": _lire_xlsx, ".xlsm": _lire_xlsx, ".txt": _lire_texte, ".csv": _lire_texte}
+
+
 def lire_dossier(chemins) -> dict:
-    """Lit tous les tableaux et tout le texte des PDF donnés. Retourne un dict de valeurs « lu » (page source)."""
+    """Lit tous les tableaux et tout le texte des documents donnés (PDF, Word, Excel, texte).
+    Retourne un dict de valeurs « lu » (avec le fichier et la page source)."""
     lect = _Lecteur()
     chemins = [Path(c) for c in (chemins if isinstance(chemins, (list, tuple)) else [chemins])]
     for ch in chemins:
-        with pdfplumber.open(ch) as pdf:
-            pages = [(i, p, p.extract_text() or "") for i, p in enumerate(pdf.pages)]
-            # la notice (données du projet) passe avant les autres pages (exercices, annexes) qui pourraient la contredire
-            pages.sort(key=lambda x: (0 if re.search(r"notice|cctp|descriptif", x[2], re.I) else 1, x[0]))
-            for i, p, txt in pages:
-                src = f"{ch.name} p.{i + 1}"
-                lect.section = ""
-                n_avant = len(str(lect.d))
-                for t in p.extract_tables():
-                    lect.tableau(t, src)
-                # texte libre, paragraphe par paragraphe (puces, lignes vides)
-                for bloc in re.split(r"\n(?=\(cid:127\)|•|-\s|\d+\.\s)", txt):
-                    lect.texte(bloc.replace("(cid:127)", "").replace("\n", " "), src)
-                if len(str(lect.d)) > n_avant:
-                    lect.d["pages_lues"].append(src)
+        lecteur = LECTEURS.get(ch.suffix.lower())
+        if lecteur:
+            lecteur(lect, ch)
     d = lect.d
     # usage : résidentiel ou tertiaire
     u = _sa(d["infos"].get("usage", {}).get("valeur"))

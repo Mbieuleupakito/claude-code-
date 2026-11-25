@@ -31,6 +31,7 @@ from .acv import CatalogueACV
 from .catalogues import Catalogue
 from .estimation.references import comparer
 from .etude import Parametres, realiser_etude
+from .formats import ACCEPTES
 from .plans.controle import image_controle
 from .rapport import generer_html, generer_pdf
 from .seuils import ZONES
@@ -136,21 +137,21 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
             raise HTTPException(422, "Ajouter au moins un PDF (plans, notice thermique…).")
         contenus = []
         for f in envois:
-            nom = (f.filename or "plan").lower()
-            if nom.endswith(".dwg"):
-                raise HTTPException(415, "DWG non lu : fournir un PDF vectoriel (ou un DXF).")
-            if nom.endswith(".dxf"):
-                raise HTTPException(415, "DXF pas encore pris en charge : fournir un PDF vectoriel.")
+            nom = Path(f.filename or "fichier").name
+            ext = Path(nom).suffix.lower()
+            if ext not in ACCEPTES:
+                raise HTTPException(415, f"« {nom} » : format non pris en charge (PDF, DXF, DWG, Word, Excel, texte, images).")
             c = await f.read()
-            if not c.startswith(b"%PDF"):
-                raise HTTPException(415, f"« {f.filename} » n'est pas un PDF.")
-            contenus.append((f.filename or "plan.pdf", c))
+            if ext == ".pdf" and not c.startswith(b"%PDF"):
+                raise HTTPException(415, f"« {nom} » n'est pas un vrai PDF.")
+            contenus.append((nom, c))
         i = uuid.uuid4().hex[:12]
         d = racine / i
         d.mkdir()
         chemins = []
         for k, (nom, c) in enumerate(contenus):
-            ch = d / ("plan.pdf" if k == 0 else f"document_{k + 1}.pdf")
+            sur = re.sub(r"[^\w.\- ]", "_", nom)[:120] or f"fichier_{k + 1}"
+            ch = d / f"{k + 1:02d}_{sur}"
             ch.write_bytes(c)
             chemins.append(ch)
         p = Parametres(zone=zone or None, altitude_m=altitude_m, date_pc=date_pc or None, projet=projet, sref=sref or None,
@@ -160,7 +161,7 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
         noms = " + ".join(n for n, _ in contenus)
         ligne = [i, datetime.now().isoformat(timespec="seconds"), projet, noms, json.dumps(p.__dict__)]
         try:
-            e = realiser_etude(chemins, p, catalogue)
+            e = realiser_etude(chemins, p, catalogue, dossier_travail=d)
         except (ValueError, KeyError) as exc:
             db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "erreur", str(exc), None))
             db.commit()
@@ -171,7 +172,8 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
             generer_pdf(e, d / "feuille_de_route.pdf")
         except Exception:  # WeasyPrint sans ses bibliothèques système (souvent sous Windows) : HTML imprimable
             pass
-        image_controle(chemins, e["plan"], d / "controle.png")
+        plans = [d / n if (d / n).exists() else next(d.glob(f"*{n}")) for n in e["fichiers"]["plans"]]
+        image_controle(plans, e["plan"], d / "controle.png")
         synthese = {"verdict": e["verdict"], "Bbio": e["estimation"]["Bbio"], "Cep": e["estimation"]["Cep"],
                     "Cep_nr": e["estimation"]["Cep_nr"], "seuils": {k: e["seuils"][k]["valeur"] for k in ("Bbio_max", "Cep_max", "Cep_nr_max")},
                     "seuils_approx": e["seuils"]["approx"], "alertes": e["alertes"],

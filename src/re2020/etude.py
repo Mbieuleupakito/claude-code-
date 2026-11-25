@@ -10,8 +10,9 @@ from .acv import CatalogueACV, estimer_acv
 from .catalogues import Catalogue
 from .documents import lire_dossier
 from .estimation import entrees_depuis_plan, estimer
+from .formats import preparer
 from .plans import extraire_plan
-from .plans.textes import normaliser_niveau, sans_accents
+from .plans.textes import famille, meme_repere, normaliser_niveau, sans_accents
 from .propositions import proposer
 from .seuils import seuils_energie, zone_normalisee
 from .trace import val
@@ -37,13 +38,23 @@ class Parametres:
     menuiserie: str | None = None      # ACV : pvc | alu
 
 
-def realiser_etude(pdfs, p: Parametres, catalogue: Catalogue | None = None,
-                   catalogue_acv: CatalogueACV | None = None) -> dict:
-    """``pdfs`` : un PDF ou une liste (plans, coupe, notice thermique…). Tout est lu."""
-    liste = list(pdfs) if isinstance(pdfs, (list, tuple)) else [pdfs]
-    plan = extraire_plan(liste, hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=p.angle_nord_deg)
-    dossier = lire_dossier(liste)
-    return etude_depuis_plan(plan, p, catalogue, catalogue_acv, dossier)
+def realiser_etude(fichiers, p: Parametres, catalogue: Catalogue | None = None,
+                   catalogue_acv: CatalogueACV | None = None, dossier_travail=None) -> dict:
+    """``fichiers`` : un ou plusieurs fichiers du dossier (PDF, DXF, DWG, Word, Excel, texte, images). Tout ce qui est
+    lisible est lu ; les DXF/DWG sont redessinés en PDF vectoriel dans ``dossier_travail``."""
+    liste = list(fichiers) if isinstance(fichiers, (list, tuple)) else [fichiers]
+    prep = preparer(liste, dossier_travail)
+    non_lus = [f"{nom} : {raison}" for nom, raison in prep["non_lus"]]
+    if not prep["plans"]:
+        raise ValueError("Aucun plan lisible dans le dossier (PDF vectoriel, DXF ou DWG attendu)"
+                         + (" — " + " ; ".join(non_lus) if non_lus else ""))
+    plan = extraire_plan(prep["plans"], hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=p.angle_nord_deg)
+    dossier = lire_dossier(prep["documents"])
+    e = etude_depuis_plan(plan, p, catalogue, catalogue_acv, dossier)
+    e["fichiers"] = {"plans": [f.name for f in prep["plans"]], "documents": [f.name for f in prep["documents"]],
+                     "non_lus": non_lus}
+    e["alertes"] = [f"Fichier non lu : {x}" for x in non_lus] + e["alertes"]
+    return e
 
 
 def _param(nom: str, fourni, lu: dict | None, libelle: str):
@@ -70,6 +81,8 @@ def _alleges(plan: dict, dossier: dict, controles: list) -> None:
         for b in n["baies"]:
             n_plan += 1
             cle = (n["niveau"]["valeur"], b["orientation"], (b["nom"] or "").upper())
+            if not stock.get(cle):
+                cle = (n["niveau"]["valeur"], b["orientation"], famille(b["nom"]))
             if stock.get(cle):
                 ligne = stock[cle].pop(0)
                 n_ok += 1
@@ -122,7 +135,7 @@ def controles_croises(plan: dict, dossier: dict) -> list[dict]:
             out.append(_ligne(f"Linéaire {l['liaison']}", pt[cle]["valeur"], l["longueur_m"]["valeur"], unite="m"))
     for m in dossier.get("menuiseries", []):
         if m.get("quantite") and not m.get("toiture"):
-            n_plan = sum(1 for n in plan["niveaux"] for b in n["baies"] if (b["nom"] or "").upper() == m["repere"].upper())
+            n_plan = sum(1 for n in plan["niveaux"] for b in n["baies"] if meme_repere(b["nom"], m["repere"]))
             out.append(_ligne(f"Nombre de {m['designation'].split(' ')[0].lower()}s ({m['repere']})", n_plan, m["quantite"]["valeur"], tol=0))
     return out
 

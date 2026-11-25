@@ -16,7 +16,9 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 4. Les seuils dépendent de la date de dépôt du PC (décret 2026-200 : PC ≥ 1er juillet 2026). Tant que MbHSP/McHSP
    sont inconnus, marquer les seuils « approx ».
 5. Confidentialité : les plans et données clients restent locaux ; ne pas les envoyer vers des services tiers.
-6. Pas de lecture de DWG : demander un PDF vectoriel ou un DXF.
+6. Formats : PDF vectoriel et DXF lus directement ; DWG seulement converti SUR LE POSTE (ODA File Converter ou
+   LibreDWG installés), jamais par un service en ligne ; Word/Excel/texte lus comme une notice ; images non lues
+   (signalées). Le DXF est redessiné en PDF vectoriel à 1:100 (`formats.py`) ; murs en traits reconnus par calque.
 
 ## Architecture visée
 - `src/re2020/seuils.py` : seuils et modulations (fait, testé) ; date de PC → HSP applicable ou non ;

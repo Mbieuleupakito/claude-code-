@@ -143,6 +143,8 @@ export interface Etude {
   parametres_sources?: Record<string, Valeur<any>>;
   usage?: Valeur<string> | null;
   tertiaire?: boolean;
+  qualite?: { niveau: "bonne" | "moyenne" | "insuffisante"; graves: string[]; mineurs: string[]; conseils: string[] };
+  fichiers?: { plans: string[]; documents: string[]; non_lus: string[] };
   liens: Liens;
   projet: string;
   date_rapport: string;

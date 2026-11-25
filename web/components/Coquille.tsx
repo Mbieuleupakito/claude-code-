@@ -27,6 +27,10 @@ function Marque() {
 export default function Coquille({ children }: { children: React.ReactNode }) {
   const chemin = usePathname() || "/";
   const [ouvert, setOuvert] = useState(false);
+  const [version, setVersion] = useState<string>("");
+  useEffect(() => {
+    fetch("/api/version").then((r) => r.json()).then((v) => setVersion(`Version ${v.version}${v.commit ? ` · ${v.commit} du ${v.date}` : ""}`)).catch(() => {});
+  }, []);
   useEffect(() => setOuvert(false), [chemin]);
   const actif = (href: string) => (href === "/" ? chemin === "/" || chemin.startsWith("/etude") : chemin.startsWith(href));
 
@@ -54,6 +58,7 @@ export default function Coquille({ children }: { children: React.ReactNode }) {
             <p className="barre-pied">
               Estimation pour préparer la saisie. Les résultats officiels sont ceux de Pléiades.
               <br />Les plans restent sur ce poste.
+              {version ? <><br /><span className="mono">{version}</span></> : null}
             </p>
           </aside>
         </div>

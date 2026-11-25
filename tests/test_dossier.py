@@ -87,3 +87,18 @@ def test_mini_projet_pavillon_de_bureaux():
     assert v(p["batiment"]["hauteur_sous_plafond_m"]) == 2.7 and v(p["batiment"]["hauteur_etage_m"]) == 3.0
     assert e["acv"]["hypotheses"]["structure"]["valeur"] == "ossature_bois"
     assert e["acv"]["hypotheses"]["menuiseries"]["valeur"] == "alu"
+
+
+def test_garde_fou_lecture_insuffisante():
+    """Un plan sans baie et aux murs aberrants ne donne pas de verdict, mais la liste de ce qu'il faut fournir."""
+    import json
+    plan = json.loads((Path(__file__).parents[1] / "data/examples/domene_m01/domene_m01_extraction.json").read_text(encoding="utf-8"))
+    for n in plan["niveaux"]:
+        n["baies"] = []
+        n["murs_exterieurs"]["couche_pleine_m"]["valeur"] = 1.0
+    from re2020.etude import etude_depuis_plan
+    e = etude_depuis_plan(plan, Parametres(zone="H1c", altitude_m=220, date_pc="2026-10-12"))
+    assert e["qualite"]["niveau"] == "insuffisante"
+    assert set(e["verdict"].values()) == {"lecture insuffisante"}
+    assert e["alertes"][0].startswith("LECTURE DU PLAN INSUFFISANTE")
+    assert any("notice" in c for c in e["qualite"]["conseils"])

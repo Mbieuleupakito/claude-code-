@@ -12,4 +12,4 @@ if [ ! -x .venv/bin/python ]; then
   "$PY" -m venv .venv && .venv/bin/python -m pip install --upgrade pip \
     && .venv/bin/python -m pip install -e ".[api,rapport]" || { echo "Échec de l'installation."; read -r -p "Entrée pour fermer"; exit 1; }
 fi
-exec .venv/bin/python -m re2020.api "$@"
+exec .venv/bin/python -m re2020.lanceur "$@"

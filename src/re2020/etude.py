@@ -168,6 +168,45 @@ def choix_constructifs(dossier: dict, p: Parametres) -> tuple[dict, dict]:
             "menuiserie": choix["menuiserie"] or "pvc"}, sources
 
 
+def qualite_lecture(plan: dict, entrees, estimation: dict, dossier: dict) -> dict:
+    """Le plan a-t-il été lu assez bien pour donner un verdict ? Sinon : raisons et documents à fournir."""
+    graves, mineurs, conseils = [], [], []
+    niv = plan["niveaux"]
+    if not any(n["niveau"]["tag"] == "lu" for n in niv):
+        mineurs.append("aucun titre de niveau (RDC, R+1…) trouvé sur le plan")
+    if len(niv) > 4:
+        graves.append(f"{len(niv)} vues détectées : le document contient sans doute un plan de masse, des façades ou des détails")
+        conseils.append("déposer les plans de niveaux (RDC, étages) plutôt que le dossier de permis complet, ou un fichier par niveau")
+    nb_baies = sum(len(n["baies"]) for n in niv)
+    if nb_baies == 0:
+        graves.append("aucune baie lue")
+        conseils.append("plans avec étiquettes de baies (« F1 / 120 x 135 ») ou tableau des menuiseries dans la notice")
+    sans_etiq = sum(1 for n in niv for b in n["baies"] if b["nom"] is None)
+    if nb_baies and sans_etiq / nb_baies > 0.5:
+        mineurs.append(f"{sans_etiq} baie(s) sur {nb_baies} sans étiquette : hauteurs supposées")
+    ep = [n["murs_exterieurs"]["couche_pleine_m"]["valeur"] for n in niv]
+    if any(x > 0.7 for x in ep):
+        graves.append(f"épaisseur de mur lue aberrante ({max(ep):.2f} m) : murs mal reconnus")
+        conseils.append("PDF vectoriel avec murs en aplat, ou DXF avec un calque de murs")
+    if entrees.U["murs"] > 0.8:
+        graves.append(f"U des murs déduit aberrant ({entrees.U['murs']:.2f} W/m².K)")
+    if not dossier.get("parois"):
+        mineurs.append("pas de notice thermique : parois, menuiseries et systèmes supposés")
+        conseils.append("notice thermique (PDF, Word ou Excel) : Up des parois, Uw, ponts thermiques, systèmes")
+    if plan["nord"]["valeur"] is None:
+        mineurs.append("nord non lu : orientations inconnues")
+        conseils.append("plan avec flèche du nord, ou saisir l'angle du nord dans les options avancées")
+    if plan["echelle"]["denominateur"]["confiance"] != "haute":
+        mineurs.append("échelle non vérifiée par une cote écrite")
+    bbio = estimation["Bbio"]["valeur"]
+    if not 20 <= bbio <= 200:
+        graves.append(f"Bbio estimé hors plage plausible ({bbio:.0f})")
+    if not 20 <= entrees.sref <= 5000:
+        graves.append(f"Sref hors plage plausible ({entrees.sref:.0f} m²)")
+    niveau = "insuffisante" if graves else ("moyenne" if mineurs else "bonne")
+    return {"niveau": niveau, "graves": graves, "mineurs": mineurs, "conseils": list(dict.fromkeys(conseils))}
+
+
 def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = None,
                       catalogue_acv: CatalogueACV | None = None, dossier: dict | None = None) -> dict:
     cat = catalogue or Catalogue()
@@ -192,7 +231,11 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
                       choix_acv["structure"], choix_acv["plancher"], choix_acv["menuiserie"], catalogue_acv, dossier, src_acv)
 
     tertiaire = inf.get("residentiel", {}).get("valeur") is False
+    qualite = qualite_lecture(plan, entrees, estimation, dossier)
     alertes = list(plan["alertes"]) + list(hyp.get("alertes", []))
+    if qualite["niveau"] == "insuffisante":
+        alertes.insert(0, "LECTURE DU PLAN INSUFFISANTE : " + " ; ".join(qualite["graves"])
+                       + (". À fournir : " + " ; ".join(qualite["conseils"]) if qualite["conseils"] else ""))
     if seuils["approx"]:
         alertes.append("Seuils « approx » : MbHSP/McHSP (décret 2026-200) inconnus pour ce PC → les lire dans Pléiades "
                        "et les fournir pour un seuil exact.")
@@ -208,9 +251,12 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     for k, kmax in (("Bbio", "Bbio_max"), ("Cep", "Cep_max"), ("Cep_nr", "Cep_nr_max")):
         est, smax = estimation[k], seuils[kmax]["valeur"]
         b, h = est["fourchette"]
-        verdict[k] = ("hors périmètre (tertiaire)" if tertiaire else
+        verdict[k] = ("lecture insuffisante" if qualite["niveau"] == "insuffisante" else
+                      "hors périmètre (tertiaire)" if tertiaire else
                       "conforme probable" if h <= smax else "non conforme probable" if b > smax else "incertain")
-    if tertiaire:
+    if qualite["niveau"] == "insuffisante":
+        acv["verdict"] = {k: "lecture insuffisante" for k in acv["verdict"]}
+    elif tertiaire:
         acv["verdict"] = {k: "hors périmètre (tertiaire)" for k in acv["verdict"]}
 
     # données encore manquantes : on retire ce que le dossier a fourni
@@ -228,6 +274,7 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
         "parametres_sources": {"zone": zone_t, "altitude_m": alt_t, "date_pc": dpc_t},
         "usage": inf.get("usage"),
         "tertiaire": tertiaire,
+        "qualite": qualite,
         "plan": plan,
         "dossier": dossier,
         "controles": controles,

@@ -131,3 +131,8 @@ def test_plusieurs_pdf_sans_saisie(client, tmp_path, plan_pdf):
     assert e["parametres_sources"]["date_pc"]["tag"] == "lu"
     sans = client.post("/api/etudes", files={"fichiers": ("plan.pdf", plan_pdf, "application/pdf")}, data={})
     assert sans.status_code == 422 and "Zone climatique" in sans.json()["detail"]
+
+
+def test_version(client):
+    v = client.get("/api/version").json()
+    assert v["version"] and client.get("/").headers.get("cache-control") == "no-cache"

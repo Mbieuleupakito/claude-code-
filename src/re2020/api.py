@@ -37,6 +37,26 @@ from .rapport import generer_html, generer_pdf
 from .seuils import ZONES
 
 WEB = Path(__file__).resolve().parent / "web"  # site Next.js compilé (npm run build dans web/)
+RACINE = Path(__file__).resolve().parents[2]
+
+
+def version() -> dict:
+    """Version du paquet + commit git (pour vérifier que le poste a bien la dernière version)."""
+    import subprocess
+    import tomllib
+
+    v = {"version": "inconnue", "commit": None, "date": None}
+    try:
+        v["version"] = tomllib.loads((RACINE / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    except (OSError, KeyError, ValueError):
+        pass
+    try:
+        r = subprocess.run(["git", "-C", str(RACINE), "log", "-1", "--format=%h %cs"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0 and r.stdout.strip():
+            v["commit"], v["date"] = r.stdout.split()
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        pass
+    return v
 STRUCTURES = {"parpaing": "Blocs béton", "brique": "Brique", "beton": "Béton banché", "ossature_bois": "Ossature bois"}
 PLANCHERS = {"hourdis": "Poutrelles-hourdis", "bois": "Bois"}
 MENUISERIES_ACV = {"pvc": "PVC", "alu": "Aluminium"}
@@ -87,6 +107,20 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
         return {"etude": f"/api/etudes/{i}", "rapport_html": f"/api/etudes/{i}/rapport.html",
                 "rapport": f"/api/etudes/{i}/rapport.pdf" if pdf_ok else f"/api/etudes/{i}/rapport.html",
                 "pdf_disponible": pdf_ok, "controle": f"/api/etudes/{i}/controle.png"}
+
+    infos_version = version()
+
+    @app.get("/api/version")
+    def api_version():
+        return infos_version
+
+    @app.middleware("http")
+    async def sans_cache(request: Request, call_next):
+        """Les pages ne sont jamais gardées par le navigateur : après une mise à jour, la nouvelle version s'affiche."""
+        r = await call_next(request)
+        if not request.url.path.startswith("/_next/"):
+            r.headers["Cache-Control"] = "no-cache"
+        return r
 
     @app.get("/api/config")
     def config():
@@ -263,6 +297,15 @@ f.onsubmit=async ev=>{ev.preventDefault();res.textContent='Analyse en cours…';
 </script></body></html>"""
 
 
+def _port_libre(hote: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as so:
+        try:
+            so.bind((hote, port))
+            return True
+        except OSError:
+            return False
+
+
 def _ip_locale() -> str:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as so:
@@ -284,8 +327,16 @@ def main(argv=None):
     if a.reseau and not a.mot_de_passe:
         ap.error("--reseau exige --mot-de-passe (les plans clients ne doivent pas être accessibles sans protection)")
     hote = "0.0.0.0" if a.reseau else "127.0.0.1"
+    port = a.port
+    while not _port_libre(hote, port) and port < a.port + 20:
+        if port == a.port:
+            print(f"\n  ATTENTION : le port {port} est déjà pris, sans doute par une ANCIENNE fenêtre de l'outil restée ouverte.")
+            print("  Fermez les autres fenêtres noires de l'outil. En attendant, cette version s'ouvre sur un autre port.")
+        port += 1
+    a.port = port
     url = f"http://127.0.0.1:{a.port}"
-    print(f"\n  Assistant RE2020 prêt : {url}")
+    v = version()
+    print(f"\n  Assistant RE2020 {v['version']}" + (f" ({v['commit']} du {v['date']})" if v["commit"] else "") + f" prêt : {url}")
     if a.reseau:
         print(f"  Depuis le téléphone (même wifi) : http://{_ip_locale()}:{a.port}  (mot de passe demandé)")
     print("  Fermer cette fenêtre pour arrêter.\n")

@@ -1,5 +1,6 @@
 @echo off
-rem Assistant RE2020 - double-cliquer pour lancer (Windows). La premiere fois, installe tout.
+rem Assistant RE2020 - double-cliquer pour lancer (Windows).
+rem Met l'outil a jour tout seul a chaque lancement, puis ouvre le site dans le navigateur.
 chcp 65001 >nul
 cd /d "%~dp0"
 title Assistant RE2020
@@ -14,9 +15,8 @@ if errorlevel 1 goto sans_python
 if errorlevel 1 goto echec
 
 :lancer
-".venv\Scripts\python.exe" -m re2020.api %*
-pause
-exit /b 0
+rem tout sur une ligne : ce fichier peut etre remplace par la mise a jour pendant qu'il tourne
+".venv\Scripts\python.exe" -m re2020.lanceur %* & pause & exit /b 0
 
 :sans_python
 echo.

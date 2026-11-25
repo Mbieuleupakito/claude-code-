@@ -93,6 +93,17 @@ function FicheEtude() {
       </nav>
 
       <div className="pile" style={{ gap: 40 }}>
+        {e.qualite && e.qualite.niveau !== "bonne" ? (
+          <div className={`message ${e.qualite.niveau === "insuffisante" ? "erreur" : "info"}`} style={{ flexDirection: "column", gap: 6 }}>
+            <strong>{e.qualite.niveau === "insuffisante"
+              ? "Lecture du plan insuffisante : les chiffres de cette étude ne sont pas exploitables"
+              : "Lecture du plan partielle : résultats à vérifier"}</strong>
+            {[...e.qualite.graves, ...e.qualite.mineurs].map((r) => <span key={r}>· {r}</span>)}
+            {e.qualite.conseils.length ? <span><b>Pour un résultat fiable, ajouter :</b> {e.qualite.conseils.join(" ; ")}</span> : null}
+            {e.fichiers?.non_lus.length ? <span><b>Fichiers non lus :</b> {e.fichiers.non_lus.join(" ; ")}</span> : null}
+          </div>
+        ) : null}
+
         {/* ------------------------------------------------ synthèse */}
         <section id="synthese" className="section">
           <h2>Synthèse</h2>

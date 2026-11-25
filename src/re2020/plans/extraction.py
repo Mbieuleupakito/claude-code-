@@ -133,7 +133,8 @@ class _Extraction:
             analyser_facades(v, hach, k)
             v.couleur = couleur_murs(v, self.formes)
             marqueurs_ouvertures(v, self.formes, k, v.couleur)
-        return vues
+        # une vue dont l'intérieur fait moins de 9 m² n'est pas un niveau de bâtiment (cartouche, détail, hachures…)
+        return [v for v in vues if v.interieur is not None and v.interieur.area * k * k >= 9]
 
     def _apparier(self, vues, k):
         """Étiquettes de baies ↔ ouvertures (glouton, plus proches d'abord)."""
@@ -239,6 +240,18 @@ class _Extraction:
                              "Demander un PDF avec murs en aplat, ou un DXF.")
         apparies, libres = self._apparier(vues, k)
         libres = self._baies_en_aplat(vues, k, apparies, libres)
+        # ouvertures sans étiquette : < 0,60 m = bruit (hachures) ; sinon baie à largeur mesurée et hauteur supposée
+        self.ignorees = sum(1 for (iv, jf, a, b) in libres if (b - a) * k < 0.6)
+        libres = [o for o in libres if (o[3] - o[2]) * k >= 0.6]
+        for (iv, jf, a, b) in libres:
+            f = vues[iv].facades[jf]
+            larg = round((b - a) * k, 2)
+            cx, cy = f.point((a + b) / 2)
+            haut = 2.15 if larg >= 1.6 else 1.35
+            self.etiquettes.append(EtiquetteBaie(nom=None, largeur_m=larg, hauteur_m=haut, allege_m=None, x=cx, y=cy, sens="ltr",
+                                                 complement="sans étiquette", tag_l="déduit", src_l="largeur mesurée sur le plan",
+                                                 tag_h="supposé", src_h="hauteur courante supposée (baie sans étiquette)"))
+            apparies.append((len(self.etiquettes) - 1, (iv, jf, a, b)))
         nord = self._nord()
         angle = nord["valeur"]
         niveaux = self._niveaux(vues, k)
@@ -247,10 +260,17 @@ class _Extraction:
         out_niv = []
         for iv in sorted(range(len(vues)), key=lambda i: _ordre(niveaux[i]["valeur"])):
             out_niv.append(self._niveau(vues[iv], iv, niveaux[iv], k, angle, nord, apparies, pieces))
-        for (iv, jf, a, b) in libres:
-            f = vues[iv].facades[jf]
-            self.alertes.append(f"{niveaux[iv]['valeur']} façade F{jf + 1}{' (' + f.nom_cote + ')' if f.nom_cote else ''} : "
-                                f"ouverture de {(b - a) * k:.2f} m sans étiquette (porte, baie non cotée ou artefact).")
+        if libres:
+            par_facade: dict = {}
+            for (iv, jf, a, b) in libres:
+                par_facade.setdefault((iv, jf), []).append((b - a) * k)
+            for (iv, jf), largeurs in par_facade.items():
+                f = vues[iv].facades[jf]
+                self.alertes.append(f"{niveaux[iv]['valeur']} façade F{jf + 1}{' (' + f.nom_cote + ')' if f.nom_cote else ''} : "
+                                    f"{len(largeurs)} ouverture(s) sans étiquette ({', '.join(f'{x:.2f}' for x in sorted(largeurs))} m) "
+                                    "comptée(s) avec une hauteur supposée : vérifier.")
+        if self.ignorees:
+            self.alertes.append(f"{self.ignorees} petite(s) interruption(s) de mur de moins de 0,60 m ignorée(s) (motifs de hachures, joints).")
         pris = {ie for ie, _ in apparies}
         for ie, e in enumerate(self.etiquettes):
             if ie not in pris:
@@ -360,7 +380,9 @@ class _Extraction:
                 d["allege_m"] = val(e.allege_m, "lu", "étiquette « all. »", "haute", "m")
             if e.complement:
                 d["mention"] = e.complement
-            if abs(larg_plan - e.largeur_m) > 0.12:
+            if e.complement == "sans étiquette":
+                d["a_verifier"] = "baie sans étiquette : hauteur supposée, type et dimensions à vérifier"
+            elif abs(larg_plan - e.largeur_m) > 0.12:
                 d["a_verifier"] = "largeur mesurée ≠ largeur écrite (tableau, coffre ou mauvais appariement)"
             d["_ouverture_pt"] = [round(c, 1) for c in (*f.point(a), *f.point(b))]
             d["_etiquette_pt"] = [round(e.x, 1), round(e.y, 1)]

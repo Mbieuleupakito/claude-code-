@@ -87,7 +87,12 @@ def generer_html(e: dict) -> str:
 
     # ---- synthèse
     H.append("<h2>Synthèse</h2>")
-    cls = {"conforme probable": "ok", "non conforme probable": "ko", "incertain": "moy", "hors périmètre (tertiaire)": "moy"}
+    cls = {"conforme probable": "ok", "non conforme probable": "ko", "incertain": "moy", "hors périmètre (tertiaire)": "moy",
+           "lecture insuffisante": "ko"}
+    q = e.get("qualite") or {}
+    if q.get("niveau") == "insuffisante":
+        H.append("<p class='alerte'><b>Lecture du plan insuffisante : les chiffres ci-dessous ne sont pas exploitables.</b> "
+                 + escape(" ; ".join(q["graves"])) + ". À fournir : " + escape(" ; ".join(q["conseils"])) + ".</p>")
     lignes = []
     for k, kmax, u in (("Bbio", "Bbio_max", "pts"), ("Cep", "Cep_max", "kWhep/m²"), ("Cep_nr", "Cep_nr_max", "kWhep/m²")):
         lignes.append([k, fv(est[k]), fv(s[kmax], u), f"<span class='{cls[e['verdict'][k]]}'>{e['verdict'][k]}</span>"])
@@ -218,7 +223,8 @@ def generer_html(e: dict) -> str:
     # ---- 11. ACV
     a = e["acv"]
     H.append("<h2>11. ACV</h2><p class='etape'>Pléiades › ACV : inventaire par lot, PCE, fiches</p>")
-    vcls = {"sous le seuil": "ok", "au-dessus du seuil": "ko", "incertain": "moy", "hors périmètre (tertiaire)": "moy"}
+    vcls = {"sous le seuil": "ok", "au-dessus du seuil": "ko", "incertain": "moy", "hors périmètre (tertiaire)": "moy",
+            "lecture insuffisante": "ko"}
     H.append(table(["Indicateur", "Estimation [fourchette]", "Seuil max", "Verdict"], [
         ["Ic construction — fiches par défaut (DED)", fv(a["Ic_construction"]["par_defaut"]), fv(a["Ic_construction_max"]),
          f"<span class='{vcls[a['verdict']['par_defaut']]}'>{a['verdict']['par_defaut']}</span>"],

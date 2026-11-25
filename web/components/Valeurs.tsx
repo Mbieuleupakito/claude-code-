@@ -47,6 +47,7 @@ const VERDICTS: Record<string, { classe: string; Icone: typeof CheckCircle2; tex
   "non conforme probable": { classe: "critique", Icone: XCircle, texte: "Non conforme probable" },
   "au-dessus du seuil": { classe: "critique", Icone: XCircle, texte: "Au-dessus du seuil" },
   "hors périmètre (tertiaire)": { classe: "attention", Icone: Info, texte: "Hors périmètre (tertiaire)" },
+  "lecture insuffisante": { classe: "critique", Icone: XCircle, texte: "Lecture insuffisante" },
 };
 
 export function Verdict({ v }: { v: TVerdict | VerdictIc | string }) {

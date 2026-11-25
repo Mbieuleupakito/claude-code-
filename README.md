@@ -35,6 +35,10 @@ Déclaré dans `.mcp.json` (serveur HTTP `https://21st.dev/api/mcp`). Clé gratu
 - relancer Claude Code dans le dossier du projet et accepter le serveur « 21st » (`/mcp` pour vérifier).
 Ne jamais lui envoyer de plans ou de données clients (règle 5) : il ne sert qu'à l'interface.
 
+## Skill « unslop » (design de l'interface)
+`.claude/skills/unslop/` (heydamir/unslop, CC BY 4.0) : demander à Claude Code « unslop la page web » pour retravailler
+une interface qui fait « générée par IA ». Disponible automatiquement dans les sessions ouvertes sur ce projet.
+
 ## ACV : remplacer les ordres de grandeur par les vraies fiches
 Les valeurs de `data/catalogues/fiches_acv.json` sont supposées. Remplir `data/catalogues/fiches_acv_modele.csv`
 (export INIES / Pléiades) puis : `cat = CatalogueACV(); cat.importer_csv("mes_fiches.csv")` → les fiches passent en « lu ».

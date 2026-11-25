@@ -60,8 +60,21 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   recherche par type de paroi / U cible / matériau, épaisseur pour un U cible, λ +15 % si non certifié, Ψ ITE/ITI.
 - `src/re2020/estimation/` (fait) : modèle saisonnier calé sur le RSET Charleville (`data/references/charleville_calage.json`),
   fourchette par sensibilités ; `references.py` affiche les écarts (Charleville −0,1 ; Domène M01 −10,5 pts de Bbio).
-- `src/re2020/propositions.py` (fait) : front de Pareto isolant x épaisseur, x menuiseries x systèmes, sous seuils −5 %, tri par coût.
-- `src/re2020/etude.py` + `src/re2020/rapport/` (fait) : chaîne complète et PDF feuille de route (WeasyPrint) dans l'ordre Pléiades.
+- `src/re2020/compositions.py` + `data/catalogues/systemes_constructifs.json` (fait) : COMPOSITIONS COMPLÈTES ext. → int.
+  (enduit + parpaing / brique R 1,45 / Gélis 30 / béton / MOB / monomur / béton cellulaire + isolant + parement), couches
+  fixes lues dans les rapports Pléiades DEEP-WATT ; isolant variable choisi parmi les familles compatibles avec la pose
+  (`poses` dans `produits.json` : iti_ossature, doublage_colle, ite_enduit, combles_soufflage, rampants, sous_dallage,
+  sous_chape, mob) ; parement cohérent (BA13 sur ossature, BA10 en complexe collé, plâtre derrière ITE) ; λ +15 % si
+  non certifié. Murs filtrés par le mode d'isolation lu (ITE/ITI) et la structure lue dans la notice.
+- `src/re2020/propositions.py` (fait) : front de Pareto compositions x menuiseries x systèmes, sous seuils −5 %, tri par
+  coût ; « variantes » = meilleure composition de chaque autre système au même U que la proposition n°1.
+- `src/re2020/pleiades.py` (fait) : lecture des rapports d'étude Pléiades (.odt) : compositions couche par couche, parois,
+  menuiseries, Ψ, résultats Projet/Max. `python -m re2020.pleiades rapport.odt --json sortie.json`. Base anonymisée
+  `data/references/projets_pleiades.json` (Charleville, MI Isère H1c ITI, Domène A180, cas OPCO tertiaire) ; notre U
+  multicouche = Up Pléiades à ±0,006 (test). Un .odt déposé dans une étude est lu comme notice (Up « lu »).
+- `src/re2020/etude.py` + `src/re2020/rapport/` (fait) : chaîne complète et PDF feuille de route dans l'ordre Pléiades,
+  avec le tableau couche par couche des compositions à créer. PDF : WeasyPrint, sinon xhtml2pdf (100 % Python, police
+  Arial/DejaVu embarquée, aucun accès réseau) → PDF garanti sous Windows sans GTK.
 - `src/re2020/api.py` (fait) : FastAPI locale + page web (dépôt du plan → verdict, PDF ou HTML imprimable, image de contrôle,
   « Mes études ») ; études en SQLite dans `etudes/`. Lanceurs `lancer.bat` / `lancer.command` (installation auto au 1er
   lancement) ; `--reseau --mot-de-passe` pour le téléphone ; `Dockerfile` pour un serveur interne (phase entreprise).
@@ -91,6 +104,7 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 ## Données de départ
 `data/catalogues/` (compositions et matériaux Pléiades, Ψ Th-Bât), `data/references/` (résultats Pléiades, RSET Charleville),
 `data/examples/` (Charleville lot 3, Domène M01 avec plan ANKHA), `docs/knowledge.md` (synthèse).
+Drive DEEP-WATT (lu) : comparatif global des isolants, guides des isolants et de la maçonnerie → λ et usages des isolants.
 À récupérer par l'utilisateur : OPEE (2 ZIP), XSD RSEE, Th-Bât 2026-04-29, annexe XI, accès webservice INIES, RSET/.plxm des autres projets.
 
 ## Utilisateur

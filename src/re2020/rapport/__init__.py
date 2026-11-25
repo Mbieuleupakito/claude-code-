@@ -1,7 +1,7 @@
 """Rapport « feuille de route » : valeurs à saisir dans Pléiades, dans l'ordre de saisie (docs/knowledge.md §3).
 
 Chaque valeur affiche son étiquette (lu / déduit / supposé) et sa confiance. La dernière section liste
-toutes les hypothèses (« supposé ») à valider. HTML → PDF avec WeasyPrint.
+toutes les hypothèses (« supposé ») à valider. HTML → PDF avec WeasyPrint, ou xhtml2pdf (100 % Python) si WeasyPrint ne fonctionne pas (Windows).
 """
 from __future__ import annotations
 
@@ -129,12 +129,23 @@ def generer_html(e: dict) -> str:
     # ---- 1. bibliothèque projet
     H.append("<h2>1. Bibliothèque projet</h2><p class='etape'>Pléiades › Bibliothèque › Parois / Menuiseries / Ponts thermiques</p>")
     p0 = e["propositions"]["propositions"][0] if e["propositions"]["propositions"] else None
-    lignes = [["Mur extérieur", fv(hyp["U_murs"]), escape(plan["niveaux"][0]["murs_exterieurs"]["isolation"]["valeur"]),
-               escape(f"{p0['murs']['isolant']} {p0['murs']['epaisseur_cm']} cm (U {p0['murs']['U']})") if p0 else "—"],
-              ["Plancher haut / toiture", fv(hyp["U_toiture"]), "type de toiture à lire sur la coupe",
-               escape(f"{p0['toiture']['isolant']} {p0['toiture']['epaisseur_cm']} cm (U {p0['toiture']['U']})") if p0 else "—"],
-              ["Plancher bas", fv(hyp["U_plancher_bas"]), "", escape(f"{p0['plancher_bas']['isolant']} {p0['plancher_bas']['epaisseur_cm']} cm (U {p0['plancher_bas']['U']})") if p0 else "—"]]
-    H.append("<h3>Parois</h3>" + table(["Paroi", "U retenu pour l'estimation", "Remarque", "Proposition n°1 (étape 5)"], lignes))
+    def compo(k):
+        return (escape(p0[k]["composition"]) + f" <span class='muet'>(U {p0[k]['U']})</span>") if p0 else "—"
+    lignes = [["Mur extérieur", fv(hyp["U_murs"]), escape(plan["niveaux"][0]["murs_exterieurs"]["isolation"]["valeur"]), compo("murs")],
+              ["Plancher haut / toiture", fv(hyp["U_toiture"]), "type de toiture à lire sur la coupe", compo("toiture")],
+              ["Plancher bas", fv(hyp["U_plancher_bas"]), "", compo("plancher_bas")]]
+    H.append("<h3>Parois</h3>" + table(["Paroi", "U retenu pour l'estimation", "Remarque", "Composition proposée n°1 (ext. → int.)"], lignes))
+    if p0:
+        H.append("<h3>Compositions à créer dans la bibliothèque (proposition n°1)</h3>")
+        for k, titre in (("murs", "Mur extérieur"), ("toiture", "Plancher haut / toiture"), ("plancher_bas", "Plancher bas")):
+            c = p0[k]
+            ref = f" — modèle : projet « {escape(c['ref_projet'])} »" if c.get("ref_projet") else ""
+            H.append(f"<p><strong>{titre}</strong> : {escape(c['systeme'])}{ref} — épaisseur totale {c['epaisseur_totale_cm']:g} cm, "
+                     f"U {c['U']} W/m².K</p>")
+            H.append(table(["Couche (ext. → int.)", "Épaisseur", "λ (W/m.K)", "R (m².K/W)", "Origine"],
+                           [[escape(x["materiau"]) + (" <span class='ko'>non certifié : λ +15 %</span>" if x.get("isolant") and not x.get("certifie", True) else ""),
+                             f"{x['epaisseur_cm']:g} cm", f"{x['lambda_W_mK']:g}" if x.get("lambda_W_mK") else "—", f"{x['R_m2K_W']:g}",
+                             escape(x.get("tag", "")) + (f" — {escape(x['note'])}" if x.get("note") else "")] for x in c["couches"]]))
     H.append("<h3>Menuiseries</h3>" + table(["Uw", "Sw", "Proposition n°1"],
              [[fv(hyp["Uw"]), fv(hyp["Sw"]), escape(f"{p0['menuiseries']['nom']} (Uw {p0['menuiseries']['Uw']}, Sw {p0['menuiseries']['Sw']})") if p0 else "—"]]))
     H.append("<h3>Ponts thermiques (Ψ)</h3>" + table(["Liaison", "Ψ (W/m.K)", "Source"],
@@ -214,11 +225,19 @@ def generer_html(e: dict) -> str:
     H.append(f"<p class='note'>{pr['nb_combinaisons_testees']} combinaisons testées, {pr['nb_conformes']} sous les seuils avec 5 % de marge. "
              f"{escape(pr['avertissement'])}</p>")
     H.append(table(["#", "Murs", "Toiture", "Plancher bas", "Menuiseries", "Système", "Bbio", "Cep", "Coût"],
-                   [[str(p["rang"]), escape(f"{p['murs']['isolant']} {p['murs']['epaisseur_cm']} cm"),
-                     escape(f"{p['toiture']['isolant']} {p['toiture']['epaisseur_cm']} cm"),
-                     escape(f"{p['plancher_bas']['isolant']} {p['plancher_bas']['epaisseur_cm']} cm"),
+                   [[str(p["rang"]), escape(p["murs"]["composition"]), escape(p["toiture"]["composition"]),
+                     escape(p["plancher_bas"]["composition"]),
                      escape(p["menuiseries"]["nom"]), escape(p["systeme"]), fv(p["Bbio"]), fv(p["Cep"]), fv(p["cout_eur"])]
                     for p in pr["propositions"]]) if pr["propositions"] else "<p class='alerte'>Aucune combinaison du catalogue ne passe les seuils estimés.</p>")
+    if pr.get("variantes"):
+        H.append("<h3>Autres systèmes constructifs au même U que la proposition n°1</h3><p class='note'>Au choix selon la "
+                 "structure retenue par l'architecte ; coûts indicatifs supposés.</p>")
+        for k, titre in (("murs", "Murs"), ("toiture", "Toiture"), ("plancher_bas", "Plancher bas")):
+            v = pr["variantes"].get(k) or []
+            if v:
+                H.append(f"<p><strong>{titre}</strong></p>" + table(["Système", "Composition (ext. → int.)", "U", "Coût indicatif"],
+                         [[escape(x["systeme"]), escape(x["composition"]), f"{x['U']}",
+                           f"{x['cout_eur']:,} € HT".replace(",", " ") if x.get("cout_eur") is not None else "—"] for x in v]))
 
     # ---- 11. ACV
     a = e["acv"]
@@ -255,9 +274,75 @@ def generer_html(e: dict) -> str:
     return "".join(H)
 
 
-def generer_pdf(etude: dict, sortie: str | Path) -> Path:
-    from weasyprint import HTML
+CSS_SIMPLE = """
+@page { size: a4 portrait; margin: 1.4cm 1.2cm 1.8cm 1.2cm;
+        @frame pied { -pdf-frame-content: pied; bottom: 0.6cm; height: 0.8cm; left: 1.2cm; right: 1.2cm; } }
+body { font-family: Helvetica; font-size: 8pt; color: #1d1d1d; }
+h1 { font-size: 15pt; color: #0b3d5c; margin: 0 0 4pt 0; }
+h2 { font-size: 11pt; background-color: #0b3d5c; color: #ffffff; padding: 3pt; margin: 12pt 0 4pt 0; }
+h3 { font-size: 9.5pt; color: #0b3d5c; margin: 8pt 0 2pt 0; }
+table { width: 100%; margin: 2pt 0 6pt 0; }
+th, td { border: 0.3pt solid #bbbbbb; padding: 2pt; text-align: left; vertical-align: top; }
+th { background-color: #e8eef3; font-weight: bold; }
+.tag { font-size: 6.5pt; color: #ffffff; }
+.lu { background-color: #2e7d32; } .deduit { background-color: #1565c0; } .suppose { background-color: #e65100; }
+.conf { font-size: 6.5pt; color: #555555; }
+.ok { color: #2e7d32; font-weight: bold; } .ko { color: #c62828; font-weight: bold; } .moy { color: #e65100; font-weight: bold; }
+.alerte { color: #b71c1c; } .note { color: #555555; font-size: 7.5pt; } .muet { color: #777777; }
+.etape { font-size: 7.5pt; color: #0b3d5c; font-weight: bold; }
+"""
 
+
+POLICES = [  # (normal, gras) : polices avec λ, Ψ, →, ≤ (Helvetica ne les a pas)
+    ("C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/arialbd.ttf"),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    ("/Library/Fonts/Arial Unicode.ttf", "/Library/Fonts/Arial Unicode.ttf"),
+    ("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Supplemental/Arial Bold.ttf"),
+]
+
+
+def _polices() -> str:
+    import os
+
+    for normal, gras in POLICES:
+        if os.path.exists(normal):
+            gras = gras if os.path.exists(gras) else normal
+            return (f"@font-face {{ font-family: Rapport; src: url('{normal}'); }}"
+                    f"@font-face {{ font-family: Rapport; src: url('{gras}'); font-weight: bold; }}"
+                    "body, h1, h2, h3, th, td, p, span, li { font-family: Rapport; }")
+    return ""
+
+
+def generer_pdf(etude: dict, sortie: str | Path, moteur: str | None = None) -> Path:
+    """PDF de la feuille de route. WeasyPrint (rendu le plus fidèle) s'il fonctionne ; sinon xhtml2pdf, 100 % Python
+    (Windows sans GTK) : le PDF est toujours produit. ``moteur`` = "weasyprint" | "xhtml2pdf" pour forcer."""
     sortie = Path(sortie)
-    HTML(string=generer_html(etude)).write_pdf(sortie)
+    html = generer_html(etude)
+    if moteur != "xhtml2pdf":
+        try:
+            from weasyprint import HTML
+
+            HTML(string=html).write_pdf(sortie)
+            return sortie
+        except Exception:  # ImportError / OSError : bibliothèques GTK absentes (Windows)
+            if moteur == "weasyprint":
+                raise
+    from xhtml2pdf import pisa
+
+    simple = html.replace(f"<style>{CSS}</style>", f"<style>{_polices()}{CSS_SIMPLE}</style>").replace(
+        "</body>", "<div id='pied' class='note'>Feuille de route RE2020 — estimation, pas un calcul réglementaire — "
+                   "p. <pdf:pagenumber/> / <pdf:pagecount/></div></body>")
+    opts = {}
+    try:  # xhtml2pdf récent : lectures locales confinées ; on autorise le dossier des polices, et aucun accès réseau
+        from xhtml2pdf.config.resources import ResourceAccessPolicy
+
+        dossiers = sorted({str(Path(n).parent) for n, _ in POLICES if Path(n).exists()})
+        opts["resource_policy"] = ResourceAccessPolicy(allow_remote=False, base_dir=Path.cwd(),
+                                                       extra_roots=[Path(d) for d in dossiers])
+    except ImportError:
+        pass
+    with open(sortie, "wb") as f:
+        res = pisa.CreatePDF(simple, dest=f, encoding="utf-8", **opts)
+    if res.err:
+        raise RuntimeError(f"PDF non généré ({res.err} erreur(s) xhtml2pdf)")
     return sortie

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "re2020-assistant"
-version = "0.7.1"
+version = "0.8.0"
 description = "Assistant d'étude RE2020 (énergie + ACV) pour préparer la saisie Pléiades — DEEP-WATT"
 requires-python = ">=3.12"
 dependencies = [
@@ -19,7 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 api = ["fastapi", "uvicorn", "python-multipart"]
-rapport = ["weasyprint"]
+rapport = ["weasyprint", "xhtml2pdf>=0.2.16"]
 dev = ["pytest", "pyflakes", "pypdf", "httpx"]
 
 [tool.setuptools.packages.find]

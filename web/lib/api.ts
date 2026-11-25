@@ -98,11 +98,33 @@ export interface Niveau {
   baies: Baie[];
 }
 
+export interface Couche {
+  materiau: string;
+  epaisseur_cm: number;
+  lambda_W_mK: number | null;
+  R_m2K_W: number;
+  tag: string;
+  isolant?: boolean;
+  certifie?: boolean;
+  note?: string;
+}
+
+export interface ParoiProposee {
+  isolant: string | null;
+  epaisseur_cm: number | null;
+  U: number;
+  systeme?: string;
+  composition?: string;
+  couches?: Couche[];
+  epaisseur_totale_cm?: number;
+  cout_eur?: number | null;
+}
+
 export interface Proposition {
   rang: number;
-  murs: { isolant: string; epaisseur_cm: number; U: number };
-  toiture: { isolant: string; epaisseur_cm: number; U: number };
-  plancher_bas: { isolant: string; epaisseur_cm: number; U: number };
+  murs: ParoiProposee;
+  toiture: ParoiProposee;
+  plancher_bas: ParoiProposee;
   menuiseries: { nom: string; Uw: number; Sw: number };
   systeme: string;
   Bbio: Valeur;
@@ -171,7 +193,8 @@ export interface Etude {
     systeme: string;
   };
   verdict: Record<"Bbio" | "Cep" | "Cep_nr", Verdict>;
-  propositions: { propositions: Proposition[]; nb_combinaisons_testees: number; nb_conformes: number; avertissement: string };
+  propositions: { propositions: Proposition[]; nb_combinaisons_testees: number; nb_conformes: number; avertissement: string;
+    variantes?: Record<string, ParoiProposee[]> };
   acv: {
     Ic_construction: Record<"par_defaut" | "top_fiches" | "tout_specifique", Valeur>;
     Ic_construction_max: Valeur;

@@ -241,7 +241,7 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
     @app.get("/api/etudes/{i}/rapport.pdf")
     def rapport(i: str):
         if not (dossier_etude(i) / "feuille_de_route.pdf").exists():
-            raise HTTPException(404, "PDF indisponible (WeasyPrint) : utiliser rapport.html puis Imprimer → PDF")
+            raise HTTPException(404, "PDF indisponible : utiliser rapport.html puis Imprimer → PDF")
         return FileResponse(dossier_etude(i) / "feuille_de_route.pdf", media_type="application/pdf", filename=f"feuille_de_route_{i}.pdf")
 
     @app.get("/api/etudes/{i}/rapport.html", response_class=HTMLResponse)

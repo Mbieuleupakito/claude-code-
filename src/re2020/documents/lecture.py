@@ -361,6 +361,38 @@ def _lire_xlsx(lect: _Lecteur, ch: Path):
         _lire_bloc(lect, f"{ch.name} ({ws.title})", tableaux, texte)
 
 
+def _lire_odt(lect: _Lecteur, ch: Path):
+    """OpenDocument (.odt/.ods, LibreOffice) : tableaux + texte. Un rapport d'étude Pléiades exporté en .odt
+    apporte en plus ses compositions de parois couche par couche (Up « lu »)."""
+    import zipfile
+    import xml.etree.ElementTree as ET
+
+    from ..pleiades import compositions, texte_odt
+
+    ns = {"table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0", "text": "urn:oasis:names:tc:opendocument:xmlns:text:1.0"}
+    racine = ET.fromstring(zipfile.ZipFile(ch).read("content.xml"))
+    tableaux = []
+    for t in racine.iter(f"{{{ns['table']}}}table"):
+        lignes = [[" ".join("".join(p.itertext()) for p in c.iter(f"{{{ns['text']}}}p"))
+                   for c in r.iter(f"{{{ns['table']}}}table-cell")] for r in t.iter(f"{{{ns['table']}}}table-row")]
+        if lignes:
+            tableaux.append(lignes)
+    texte = texte_odt(ch)
+    _lire_bloc(lect, ch.name, tableaux, texte.replace(" | ", " "))
+    for c in compositions(texte):
+        if c["Up_pleiades"] is None or c["nature"] in (None, "Autre", "Non définie"):
+            continue
+        des = f"{c['nom']} ({c['nature']})"
+        lect.d["parois"].append({
+            "ref": c["nom"], "designation": des, "type_paroi": {"Paroi verticale": "mur_ext", "Plancher haut": "plafond",
+                                                                   "Plancher bas": "plancher_bas"}.get(c["type_paroi"], type_paroi(des)),
+            "Up": lect.lu(c["Up_pleiades"], f"{ch.name} (bibliothèque Pléiades)", "W/m².K", note="Up indicatif Pléiades"),
+            "composition": " + ".join(f"{x['materiau']} {x['epaisseur_cm']:g} cm" for x in c["couches"]),
+            "couches": [{"materiau": x["materiau"], "epaisseur_mm": x["epaisseur_cm"] * 10, "lambda": x["lambda_W_mK"]}
+                        for x in c["couches"]],
+            "R_isolants": ""})
+
+
 def _lire_texte(lect: _Lecteur, ch: Path):
     import csv
 
@@ -378,7 +410,7 @@ def _lire_texte(lect: _Lecteur, ch: Path):
     _lire_bloc(lect, ch.name, tableaux, texte)
 
 
-LECTEURS = {".pdf": _lire_pdf, ".docx": _lire_docx, ".xlsx": _lire_xlsx, ".xlsm": _lire_xlsx, ".txt": _lire_texte, ".csv": _lire_texte}
+LECTEURS = {".pdf": _lire_pdf, ".docx": _lire_docx, ".odt": _lire_odt, ".ods": _lire_odt, ".xlsx": _lire_xlsx, ".xlsm": _lire_xlsx, ".txt": _lire_texte, ".csv": _lire_texte}
 
 
 def lire_dossier(chemins) -> dict:

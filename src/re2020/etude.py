@@ -285,8 +285,11 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     sref = entrees.sref
     seuils = seuils_energie(zone, float(alt_v), sref / p.nb_logements, dpc_v, mb_hsp=p.mb_hsp, mc_hsp=p.mc_hsp)
     estimation = estimer(entrees, "plan + dossier" if dossier.get("pages_lues") else "plan + hypothèses")
-    props = proposer(entrees, seuils, cat)
     choix_acv, src_acv = choix_constructifs(dossier, p)
+    modes = {n["murs_exterieurs"]["isolation"]["valeur"][:3] for n in plan["niveaux"]}
+    iso_mode = next(iter(modes)) if len(modes) == 1 and next(iter(modes)) in ("ITE", "ITI") else None
+    structure_connue = p.structure or (choix_acv["structure"] if "structure" in src_acv else None)
+    props = proposer(entrees, seuils, cat, isolation=iso_mode, structure=structure_connue)
     acv = estimer_acv(plan, entrees, estimation, dpc_v, zone, float(alt_v), entrees.systeme["nom"], p.nb_logements,
                       choix_acv["structure"], choix_acv["plancher"], choix_acv["menuiserie"], catalogue_acv, dossier, src_acv)
 

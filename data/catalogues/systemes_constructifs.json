@@ -1,0 +1,139 @@
+{
+ "source": "Compositions complètes de l'extérieur vers l'intérieur. Couches tirées des rapports Pléiades DEEP-WATT (tag « lu ») ou valeurs courantes (« supposé »). « isolant » = couche variable : famille compatible (poses) x épaisseur.",
+ "avertissement": "Coûts hors isolant (€ HT/m², fourniture + pose) SUPPOSÉS : à remplacer par les prix DEEP-WATT. Les R des blocs et briques sont à confirmer sur la fiche du produit retenu.",
+ "systemes": [
+  {"id": "mur_parpaing_iti_ossature", "paroi": "mur", "isolation": "ITI", "structure": "parpaing",
+   "nom": "Parpaing 20 + doublage sur ossature métallique", "ref_projet": "mi_isere_h1c_iti",
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 2, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Parpaing de 20", "ep_cm": 20, "R": 0.19, "tag": "lu"},
+    {"isolant": true, "poses": ["iti_ossature"], "ep_cm": [8, 24, 2]},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu", "note": "BA13 sur ossature métallique (rails + fourrures)"}
+   ], "cout_hors_isolant_eur_m2": 95},
+  {"id": "mur_parpaing_doublage_colle", "paroi": "mur", "isolation": "ITI", "structure": "parpaing",
+   "nom": "Parpaing 20 + complexe de doublage collé", "ref_projet": null,
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 2, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Parpaing de 20", "ep_cm": 20, "R": 0.19, "tag": "lu"},
+    {"isolant": true, "poses": ["doublage_colle"], "ep_cm": [8, 16, 2]},
+    {"materiau": "Placoplatre BA 10", "ep_cm": 1.0, "lambda": 0.333, "tag": "lu", "note": "BA10 : parement du complexe collé"}
+   ], "cout_hors_isolant_eur_m2": 80},
+  {"id": "mur_parpaing_ite", "paroi": "mur", "isolation": "ITE", "structure": "parpaing",
+   "nom": "Parpaing 20 + ITE sous enduit", "ref_projet": null,
+   "couches": [
+    {"materiau": "Enduit mince ITE armé", "ep_cm": 1, "lambda": 0.9, "tag": "supposé"},
+    {"isolant": true, "poses": ["ite_enduit"], "ep_cm": [10, 24, 2]},
+    {"materiau": "Parpaing de 20", "ep_cm": 20, "R": 0.19, "tag": "lu"},
+    {"materiau": "Enduit plâtre intérieur", "ep_cm": 1.5, "lambda": 0.42, "tag": "supposé", "note": "plâtre gypse"}
+   ], "cout_hors_isolant_eur_m2": 135},
+  {"id": "mur_brique_r145_iti", "paroi": "mur", "isolation": "ITI", "structure": "brique",
+   "nom": "Brique alvéolaire 20 cm (R 1,45, type Porotherm R20 Th+) + doublage sur ossature", "ref_projet": "charleville_lot3",
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 2, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Porotherm R20Th+", "ep_cm": 20, "R": 1.45, "tag": "lu"},
+    {"isolant": true, "poses": ["iti_ossature"], "ep_cm": [6, 20, 2]},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 115},
+  {"id": "mur_brique_r145_ite", "paroi": "mur", "isolation": "ITE", "structure": "brique",
+   "nom": "Brique alvéolaire 20 cm (R 1,45) + ITE sous enduit", "ref_projet": "charleville_lot3",
+   "couches": [
+    {"materiau": "Enduit mince ITE armé", "ep_cm": 1, "lambda": 0.9, "tag": "supposé"},
+    {"isolant": true, "poses": ["ite_enduit"], "ep_cm": [10, 24, 2]},
+    {"materiau": "Porotherm R20Th+", "ep_cm": 20, "R": 1.45, "tag": "lu"},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 150},
+  {"id": "mur_gelis30_doublage", "paroi": "mur", "isolation": "ITI", "structure": "brique",
+   "nom": "Brique Gélis 30 (R 2,0) + doublage collé", "ref_projet": "domene_a180",
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 2, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Brique Gélis 30", "ep_cm": 30, "R": 2.0, "tag": "lu"},
+    {"isolant": true, "poses": ["doublage_colle"], "ep_cm": [6, 14, 2]},
+    {"materiau": "Placoplatre BA 10", "ep_cm": 1.0, "lambda": 0.333, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 125},
+  {"id": "mur_brique_creuse_iti", "paroi": "mur", "isolation": "ITI", "structure": "brique",
+   "nom": "Brique creuse 20 cm traditionnelle + doublage sur ossature", "ref_projet": null,
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 2, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Brique creuse terre cuite", "ep_cm": 20, "R": 0.5, "tag": "supposé", "note": "R 0,4 à 0,75 selon le produit"},
+    {"isolant": true, "poses": ["iti_ossature"], "ep_cm": [10, 24, 2]},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 105},
+  {"id": "mur_beton_ite", "paroi": "mur", "isolation": "ITE", "structure": "beton",
+   "nom": "Voile béton 18 cm + ITE sous enduit", "ref_projet": null,
+   "couches": [
+    {"materiau": "Enduit mince ITE armé", "ep_cm": 1, "lambda": 0.9, "tag": "supposé"},
+    {"isolant": true, "poses": ["ite_enduit"], "ep_cm": [10, 24, 2]},
+    {"materiau": "Béton plein armé", "ep_cm": 18, "lambda": 2.3, "tag": "lu"},
+    {"materiau": "Enduit plâtre intérieur", "ep_cm": 1.5, "lambda": 0.42, "tag": "supposé"}
+   ], "cout_hors_isolant_eur_m2": 170},
+  {"id": "mur_mob", "paroi": "mur", "isolation": "répartie", "structure": "ossature_bois",
+   "nom": "Ossature bois 145 + isolant entre montants + contre-cloison isolée", "ref_projet": "formation_opco_tertiaire",
+   "couches": [
+    {"materiau": "Fibre de bois rigide (pare-pluie)", "ep_cm": 6, "lambda": 0.042, "tag": "supposé"},
+    {"materiau": "Panneau OSB", "ep_cm": 1.2, "lambda": 0.13, "tag": "lu"},
+    {"isolant": true, "poses": ["mob"], "ep_cm": [14.5, 22, 7.5], "mixte": {"materiau": "Bois montant", "lambda": 0.13, "part": 0.15},
+     "note": "isolant entre montants : λ équivalent = 85 % isolant + 15 % bois"},
+    {"materiau": "Laine de verre λ32 (vide technique)", "ep_cm": 4.5, "lambda": 0.032, "tag": "supposé"},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 160},
+  {"id": "mur_monomur", "paroi": "mur", "isolation": "répartie", "structure": "brique",
+   "nom": "Monomur terre cuite 37,5 cm, enduits (sans doublage)", "ref_projet": null, "sans_isolant": true,
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 2, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Brique monomur 37,5", "ep_cm": 37.5, "R": 3.6, "tag": "supposé", "note": "R 3,0 à 3,8 selon le fabricant"},
+    {"materiau": "Enduit plâtre intérieur", "ep_cm": 1.5, "lambda": 0.42, "tag": "supposé"}
+   ], "cout_hors_isolant_eur_m2": 150},
+  {"id": "mur_beton_cellulaire", "paroi": "mur", "isolation": "répartie", "structure": "beton_cellulaire",
+   "nom": "Béton cellulaire 30 cm, enduits (sans doublage)", "ref_projet": null, "sans_isolant": true,
+   "couches": [
+    {"materiau": "Enduit extérieur", "ep_cm": 1.5, "lambda": 1.15, "tag": "lu"},
+    {"materiau": "Béton cellulaire", "ep_cm": 30, "lambda": 0.09, "tag": "supposé", "note": "λ 0,08 à 0,11 selon la masse volumique"},
+    {"materiau": "Enduit plâtre intérieur", "ep_cm": 1.5, "lambda": 0.42, "tag": "supposé"}
+   ], "cout_hors_isolant_eur_m2": 140},
+
+  {"id": "plafond_combles_perdus", "paroi": "plafond", "isolation": "combles perdus", "structure": "fermettes",
+   "nom": "Combles perdus : isolant soufflé sur plafond plâtre", "ref_projet": "mi_isere_h1c_iti",
+   "couches": [
+    {"isolant": true, "poses": ["combles_soufflage"], "ep_cm": [24, 48, 4]},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu", "note": "BA13 sur ossature suspendue + pare-vapeur"}
+   ], "cout_hors_isolant_eur_m2": 35},
+  {"id": "plafond_rampants", "paroi": "plafond", "isolation": "rampants", "structure": "charpente",
+   "nom": "Rampants : isolant entre et sous chevrons, lame d'air, BA13", "ref_projet": "domene_a180",
+   "couches": [
+    {"isolant": true, "poses": ["rampants"], "ep_cm": [20, 36, 4]},
+    {"materiau": "Lame d'air > 1.3 cm", "ep_cm": 1.5, "R": 0.16, "tag": "lu"},
+    {"materiau": "Placoplatre BA 13", "ep_cm": 1.3, "lambda": 0.325, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 55},
+  {"id": "plafond_sur_hourdis", "paroi": "plafond", "isolation": "plancher sous combles", "structure": "hourdis",
+   "nom": "Plancher hourdis 20 + isolant + chape (combles aménageables)", "ref_projet": "domene_a180",
+   "couches": [
+    {"materiau": "Mortier (chape)", "ep_cm": 5, "lambda": 1.15, "tag": "lu"},
+    {"isolant": true, "poses": ["sous_chape"], "ep_cm": [10, 20, 2]},
+    {"materiau": "Hourdis de 20 en béton", "ep_cm": 20, "R": 0.15, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 70},
+
+  {"id": "pb_dallage_sous_dallage_tms", "paroi": "plancher_bas", "isolation": "sous dallage + sous chape", "structure": "dallage",
+   "nom": "Terre-plein : isolant sous dallage + dallage 15 + PU TMS 4 cm sous chape", "ref_projet": "mi_isere_h1c_iti",
+   "couches": [
+    {"isolant": true, "poses": ["sous_dallage"], "ep_cm": [6, 16, 2]},
+    {"materiau": "Béton lourd (dallage)", "ep_cm": 15, "lambda": 1.75, "tag": "lu"},
+    {"materiau": "TMS 40 mm (PU sous chape)", "ep_cm": 4, "lambda": 0.022, "tag": "lu"},
+    {"materiau": "Béton lourd (chape)", "ep_cm": 4, "lambda": 1.75, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 85, "note": "Pléiades : Rsi 0,17 et pas de Rse (terre-plein)"},
+  {"id": "pb_dallage_sous_chape", "paroi": "plancher_bas", "isolation": "sous chape", "structure": "dallage",
+   "nom": "Terre-plein : dallage 15 + isolant sous chape", "ref_projet": "charleville_lot3",
+   "couches": [
+    {"materiau": "Béton lourd (dallage)", "ep_cm": 15, "lambda": 1.75, "tag": "lu"},
+    {"isolant": true, "poses": ["sous_chape"], "ep_cm": [6, 14, 1]},
+    {"materiau": "Béton lourd (chape)", "ep_cm": 5, "lambda": 1.75, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 80},
+  {"id": "pb_vide_sanitaire_hourdis_pse", "paroi": "plancher_bas", "isolation": "hourdis isolant + sous chape", "structure": "hourdis",
+   "nom": "Vide sanitaire : hourdis PSE (R 1,52) + dalle de compression + isolant sous chape", "ref_projet": "charleville_lot3",
+   "couches": [
+    {"materiau": "Hourdis PPB ISO5 4", "ep_cm": 25, "R": 1.52, "tag": "lu"},
+    {"materiau": "Dalle de compression béton", "ep_cm": 5, "lambda": 1.75, "tag": "supposé"},
+    {"isolant": true, "poses": ["sous_chape"], "ep_cm": [4, 12, 1]},
+    {"materiau": "Béton lourd (chape)", "ep_cm": 5, "lambda": 1.75, "tag": "lu"}
+   ], "cout_hors_isolant_eur_m2": 95}
+ ]
+}

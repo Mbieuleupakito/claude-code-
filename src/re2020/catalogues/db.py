@@ -24,7 +24,7 @@ CREATE TABLE compositions (id INTEGER PRIMARY KEY, nom TEXT, categorie TEXT, typ
                            epaisseur_cm REAL);
 CREATE TABLE couches (composition_id INTEGER, ordre INTEGER, materiau TEXT, epaisseur_cm REAL, source TEXT);
 CREATE TABLE psi (liaison TEXT, variante TEXT, isolation TEXT, valeur REAL, source TEXT);
-CREATE TABLE isolants (nom TEXT PRIMARY KEY, lambda REAL, certifie INTEGER, usages TEXT, prix_eur_m2_cm REAL);
+CREATE TABLE isolants (nom TEXT PRIMARY KEY, lambda REAL, certifie INTEGER, usages TEXT, prix_eur_m2_cm REAL, data TEXT);
 CREATE TABLE menuiseries (nom TEXT PRIMARY KEY, uw REAL, sw REAL, prix_eur_m2 REAL);
 CREATE TABLE systemes (nom TEXT PRIMARY KEY, data TEXT);
 """
@@ -103,8 +103,9 @@ class Catalogue:
                     cx.execute("INSERT INTO psi VALUES (?,?,?,?,?)", (liaison, variante, iso, v, "Th-Bât (catalogue_psi_th_bat.json)"))
         prod = self._json("produits.json")
         for p in prod["isolants"]:
-            cx.execute("INSERT INTO isolants VALUES (?,?,?,?,?)",
-                       (p["nom"], p["lambda_W_mK"], int(p["certifie"]), ",".join(p["usages"]), p.get("prix_eur_m2_cm")))
+            cx.execute("INSERT INTO isolants VALUES (?,?,?,?,?,?)",
+                       (p["nom"], p["lambda_W_mK"], int(p["certifie"]), ",".join(p["usages"]), p.get("prix_eur_m2_cm"),
+                        json.dumps(p, ensure_ascii=False)))
         for p in prod["menuiseries"]:
             cx.execute("INSERT INTO menuiseries VALUES (?,?,?,?)", (p["nom"], p["Uw"], p["Sw"], p.get("prix_eur_m2")))
         for p in prod["systemes"]:
@@ -174,8 +175,9 @@ class Catalogue:
     # ------------------------------------------------------------------ isolants / produits
     def isolants(self, usage: str | None = None) -> list[dict]:
         rows = self.cx.execute("SELECT * FROM isolants").fetchall()
-        return [{"nom": r["nom"], "lambda_W_mK": r["lambda"], "certifie": bool(r["certifie"]), "usages": r["usages"].split(","),
-                 "prix_eur_m2_cm": r["prix_eur_m2_cm"]} for r in rows if usage is None or usage in r["usages"].split(",")]
+        return [{**json.loads(r["data"] or "{}"), "nom": r["nom"], "lambda_W_mK": r["lambda"], "certifie": bool(r["certifie"]),
+                 "usages": r["usages"].split(","), "prix_eur_m2_cm": r["prix_eur_m2_cm"]}
+                for r in rows if usage is None or usage in r["usages"].split(",")]
 
     def menuiseries(self) -> list[dict]:
         return [{"nom": r["nom"], "Uw": r["uw"], "Sw": r["sw"], "prix_eur_m2": r["prix_eur_m2"]}

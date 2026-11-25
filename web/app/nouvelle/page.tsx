@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api, type Config } from "@/lib/api";
 
-const FORMATS = ["pdf", "dxf", "dwg", "docx", "xlsx", "xlsm", "txt", "csv", "png", "jpg", "jpeg", "tif", "tiff"];
+const FORMATS = ["pdf", "dxf", "dwg", "docx", "odt", "ods", "xlsx", "xlsm", "txt", "csv", "png", "jpg", "jpeg", "tif", "tiff"];
 
 export default function NouvelleEtude() {
   const router = useRouter();
@@ -86,9 +86,9 @@ export default function NouvelleEtude() {
             onDrop={(e) => { e.preventDefault(); setSurvol(false); choisir(e.dataTransfer.files); }}>
             <FileUp strokeWidth={1.5} />
             <strong>{fichiers.length ? "Ajouter d'autres fichiers" : "Déposer les fichiers du dossier ici"}</strong>
-            <span className="muet">ou cliquer pour les choisir · PDF, DXF, DWG, Word, Excel · un ou plusieurs fichiers</span>
+            <span className="muet">ou cliquer pour les choisir · PDF, DXF, DWG, Word, LibreOffice, Excel · un ou plusieurs fichiers</span>
           </div>
-          <input ref={entreeFichier} type="file" accept=".pdf,.dxf,.dwg,.docx,.xlsx,.xlsm,.txt,.csv,.png,.jpg,.jpeg,.tif,.tiff" multiple hidden onChange={(e) => { choisir(e.target.files); e.target.value = ""; }} />
+          <input ref={entreeFichier} type="file" accept=".pdf,.dxf,.dwg,.docx,.odt,.ods,.xlsx,.xlsm,.txt,.csv,.png,.jpg,.jpeg,.tif,.tiff" multiple hidden onChange={(e) => { choisir(e.target.files); e.target.value = ""; }} />
         </section>
 
         <section className="carte carte-corps pile" style={{ gap: 16 }}>

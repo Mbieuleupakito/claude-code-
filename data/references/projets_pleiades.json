@@ -1,0 +1,1610 @@
+{
+ "avertissement": "Projets réels conformes (données techniques seulement, sans nom de client ni adresse). Valeurs « lu » dans Pléiades.",
+ "projets": [
+  {
+   "id": "charleville_lot3",
+   "libelle": "MI Charleville-Mézières (08) lot 3 — attestation finale",
+   "usage": "maison individuelle",
+   "source": "rapport d'étude Pléiades (.odt) fourni par DEEP-WATT",
+   "projet": {
+    "departement": "08",
+    "zone": "H1b",
+    "altitude_m": 162,
+    "generateurs": [
+     "Synea Duo 6kW"
+    ]
+   },
+   "compositions": [
+    {
+     "nom": "CLOISON FINE",
+     "type_paroi": "Non définie",
+     "nature": "Non définie",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Plâtre gypse",
+       "epaisseur_cm": 3.0,
+       "lambda_W_mK": 0.42,
+       "masse_vol_kg_m3": 1200.0,
+       "chaleur_massique_Wh_kgK": 0.232,
+       "R_m2K_W": 0.07
+      },
+      {
+       "materiau": "Laine de roche",
+       "epaisseur_cm": 4.0,
+       "lambda_W_mK": 0.041,
+       "masse_vol_kg_m3": 25.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 0.98
+      },
+      {
+       "materiau": "Plâtre gypse",
+       "epaisseur_cm": 3.0,
+       "lambda_W_mK": 0.42,
+       "masse_vol_kg_m3": 1200.0,
+       "chaleur_massique_Wh_kgK": 0.232,
+       "R_m2K_W": 0.07
+      }
+     ],
+     "R_total_m2K_W": 1.12,
+     "Up_pleiades": 0.78,
+     "epaisseur_totale_cm": 10.0
+    },
+    {
+     "nom": "MUR INTERIEUR BETON",
+     "type_paroi": "Paroi verticale",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Béton lourd",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 1.75,
+       "masse_vol_kg_m3": 2300.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 0.11
+      }
+     ],
+     "R_total_m2K_W": 0.11,
+     "Up_pleiades": 3.57,
+     "epaisseur_totale_cm": 20.0
+    },
+    {
+     "nom": "Plancher Bas",
+     "type_paroi": "Plancher bas",
+     "nature": "Terre plein",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Polystyrène expansé",
+       "epaisseur_cm": 14.0,
+       "lambda_W_mK": 0.039,
+       "masse_vol_kg_m3": 25.0,
+       "chaleur_massique_Wh_kgK": 0.383,
+       "R_m2K_W": 3.59
+      },
+      {
+       "materiau": "TMS 68 mm 1200 x1000",
+       "epaisseur_cm": 6.8,
+       "lambda_W_mK": 0.022,
+       "masse_vol_kg_m3": 35.0,
+       "chaleur_massique_Wh_kgK": 0.0,
+       "R_m2K_W": 3.15
+      },
+      {
+       "materiau": "TMS 40 mm 1200 x1000",
+       "epaisseur_cm": 4.0,
+       "lambda_W_mK": 0.022,
+       "masse_vol_kg_m3": 35.0,
+       "chaleur_massique_Wh_kgK": 0.0,
+       "R_m2K_W": 1.85
+      },
+      {
+       "materiau": "Béton lourd",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 1.75,
+       "masse_vol_kg_m3": 2300.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 0.11
+      }
+     ],
+     "R_total_m2K_W": 8.7,
+     "Up_pleiades": 0.11,
+     "epaisseur_totale_cm": 44.8
+    },
+    {
+     "nom": "Plancher intermediaire",
+     "type_paroi": "Non définie",
+     "nature": "Non définie",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Hourdis PPB ISO5 4",
+       "epaisseur_cm": 25.0,
+       "lambda_W_mK": 0.164,
+       "masse_vol_kg_m3": 1527.0,
+       "chaleur_massique_Wh_kgK": 0.26,
+       "R_m2K_W": 1.52
+      }
+     ],
+     "R_total_m2K_W": 1.52,
+     "Up_pleiades": 0.59,
+     "epaisseur_totale_cm": 25.0
+    },
+    {
+     "nom": "Plafond sous comble perdu",
+     "type_paroi": "Plancher haut",
+     "nature": "Sous combles perdus",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Acier (générique)",
+       "epaisseur_cm": 5.0,
+       "lambda_W_mK": 46.0,
+       "masse_vol_kg_m3": 7850.0,
+       "chaleur_massique_Wh_kgK": 0.136,
+       "R_m2K_W": 0.0
+      },
+      {
+       "materiau": "Laine de verre 30",
+       "epaisseur_cm": 30.0,
+       "lambda_W_mK": 0.032,
+       "masse_vol_kg_m3": 12.0,
+       "chaleur_massique_Wh_kgK": 0.233,
+       "R_m2K_W": 9.38
+      },
+      {
+       "materiau": "Plâtre gypse",
+       "epaisseur_cm": 2.0,
+       "lambda_W_mK": 0.42,
+       "masse_vol_kg_m3": 1200.0,
+       "chaleur_massique_Wh_kgK": 0.232,
+       "R_m2K_W": 0.05
+      }
+     ],
+     "R_total_m2K_W": 9.42,
+     "Up_pleiades": 0.1,
+     "epaisseur_totale_cm": 37.0
+    },
+    {
+     "nom": "MUR EXTERIEUR sud et nord",
+     "type_paroi": "Paroi verticale",
+     "nature": "Mur extérieur",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Laine de verre 30",
+       "epaisseur_cm": 10.0,
+       "lambda_W_mK": 0.032,
+       "masse_vol_kg_m3": 12.0,
+       "chaleur_massique_Wh_kgK": 0.233,
+       "R_m2K_W": 3.13
+      },
+      {
+       "materiau": "Laine de verre 30",
+       "epaisseur_cm": 10.0,
+       "lambda_W_mK": 0.032,
+       "masse_vol_kg_m3": 12.0,
+       "chaleur_massique_Wh_kgK": 0.233,
+       "R_m2K_W": 3.13
+      },
+      {
+       "materiau": "Porotherm R20Th+",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 0.138,
+       "masse_vol_kg_m3": 640.0,
+       "chaleur_massique_Wh_kgK": 0.289,
+       "R_m2K_W": 1.45
+      },
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 7.74,
+     "Up_pleiades": 0.13,
+     "epaisseur_totale_cm": 41.3
+    }
+   ],
+   "parois_opaques": [
+    {
+     "nature": "Plancher bas",
+     "libelle": "Plancher Bas",
+     "systeme_constructif": "",
+     "ep_isolant_cm": 24.8,
+     "R_isolant": 8.59,
+     "origine": "Marquage CE",
+     "Up": 0.1,
+     "surface_m2": 126.74,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Plancher haut",
+     "libelle": "Plafond sous comble perdu",
+     "systeme_constructif": "",
+     "ep_isolant_cm": 30.0,
+     "R_isolant": 9.38,
+     "origine": "Marquage CE",
+     "Up": 0.1,
+     "surface_m2": 136.19,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "MUR EXTERIEUR sud et nord",
+     "systeme_constructif": "Isolation thermique par l'extérieure",
+     "ep_isolant_cm": 20.0,
+     "R_isolant": 6.25,
+     "origine": "Marquage CE",
+     "Up": 0.13,
+     "surface_m2": 226.29,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Porte Entrée",
+     "systeme_constructif": "Autre : Porte",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "Marquage CE",
+     "Up": 2.57,
+     "surface_m2": 5.5,
+     "b": "Extérieur"
+    }
+   ],
+   "menuiseries": [
+    {
+     "orientation": "Sud",
+     "type": "Porte fenêtre",
+     "libelle": "Porte Fenetre alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.44,
+     "Tl": 0.44,
+     "surface_m2": 18.4
+    },
+    {
+     "orientation": "Ouest",
+     "type": "Porte fenêtre",
+     "libelle": "Porte Fenetre alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.42,
+     "Tl": 0.48,
+     "surface_m2": 13.39
+    },
+    {
+     "orientation": "Est",
+     "type": "Fenêtre",
+     "libelle": "Fenetre Alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.28,
+     "Tl": 0.37,
+     "surface_m2": 7.2
+    },
+    {
+     "orientation": "Ouest",
+     "type": "Fenêtre",
+     "libelle": "Fenetre Alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.28,
+     "Tl": 0.37,
+     "surface_m2": 3.6
+    },
+    {
+     "orientation": "Est",
+     "type": "Fenêtre",
+     "libelle": "Fenetre Alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.28,
+     "Tl": 0.36,
+     "surface_m2": 1.65
+    },
+    {
+     "orientation": "Nord",
+     "type": "Fenêtre",
+     "libelle": "Fenetre Alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.27,
+     "Tl": 0.27,
+     "surface_m2": 0.84
+    },
+    {
+     "orientation": "Ouest",
+     "type": "Fenêtre",
+     "libelle": "Fenetre Alu",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "Alu",
+     "vitrage": "DV 4_16_4 PE Argon",
+     "Ug": 1.1,
+     "Uw": 1.4,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.28,
+     "Tl": 0.3,
+     "surface_m2": 0.45
+    }
+   ],
+   "ponts_thermiques": [
+    {
+     "nom": "ITE 2.1.1-Pl. béton ou entrevous ou Pl. léger",
+     "classe": "2.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.09
+    },
+    {
+     "nom": "ITE 3.1.10-Mur façade maç. courante avec Pl. léger",
+     "classe": "3.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.05
+    },
+    {
+     "nom": "ITE 1.1.01-Dallage isolé en sous-face",
+     "classe": "1.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.6
+    },
+    {
+     "nom": "ITE 4.3.1-Refend béton",
+     "classe": "4.3",
+     "origine": "CSTB",
+     "psi_W_mK": 0.06
+    },
+    {
+     "nom": "ITE 4.1.3-Murs maç. isolante type b",
+     "classe": "4.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.1
+    }
+   ],
+   "resultats": {
+    "besoin_chauffage": 28.9,
+    "besoin_froid": 1.0,
+    "besoin_eclairage": 1.8,
+    "Bbio": 68.9,
+    "Bbio_max": 71.6,
+    "conso_chauffage": 25.76,
+    "conso_froid": 0.0,
+    "conso_ecs": 10.35,
+    "conso_eclairage": 4.14,
+    "Cep": 40.3,
+    "Cep_max": 68.1,
+    "Cep_nr": 40.3,
+    "Cep_nr_max": 49.9,
+    "Ic_energie": 51.47,
+    "Ic_energie_max": 145.31,
+    "deperditions_W_K": 187.0,
+    "deperditions_opaques_W_K": 69.85,
+    "deperditions_vitrees_W_K": 63.74,
+    "deperditions_ponts_W_K": 53.55
+   }
+  },
+  {
+   "id": "mi_isere_h1c_iti",
+   "libelle": "MI Isère (38) H1c — parpaing + ITI",
+   "usage": "maison individuelle",
+   "source": "rapport d'étude Pléiades (.odt) fourni par DEEP-WATT",
+   "projet": {
+    "departement": "38",
+    "zone": "H1c",
+    "altitude_m": 311,
+    "generateurs": [
+     "6.0kW -  R410a - RWD-2.5NWLE-200S_RAS-2.5WHVN_"
+    ]
+   },
+   "compositions": [
+    {
+     "nom": "Mur extérieur",
+     "type_paroi": "Paroi verticale",
+     "nature": "Mur extérieur",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Enduit extérieur",
+       "epaisseur_cm": 2.0,
+       "lambda_W_mK": 1.15,
+       "masse_vol_kg_m3": 1700.0,
+       "chaleur_massique_Wh_kgK": 0.278,
+       "R_m2K_W": 0.02
+      },
+      {
+       "materiau": "Parpaing de 20",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 1.053,
+       "masse_vol_kg_m3": 1300.0,
+       "chaleur_massique_Wh_kgK": 0.18,
+       "R_m2K_W": 0.19
+      },
+      {
+       "materiau": "GR 32 revêtu Kraft 140_600_1350",
+       "epaisseur_cm": 14.0,
+       "lambda_W_mK": 0.032,
+       "masse_vol_kg_m3": 28.0,
+       "chaleur_massique_Wh_kgK": 0.233,
+       "R_m2K_W": 4.35
+      },
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 4.6,
+     "Up_pleiades": 0.21,
+     "epaisseur_totale_cm": 37.3
+    },
+    {
+     "nom": "Cloison légère",
+     "type_paroi": "Paroi verticale",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      },
+      {
+       "materiau": "Lame d'air",
+       "epaisseur_cm": 4.8,
+       "lambda_W_mK": 0.096,
+       "masse_vol_kg_m3": 1.0,
+       "chaleur_massique_Wh_kgK": 0.34,
+       "R_m2K_W": 0.5
+      },
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 0.58,
+     "Up_pleiades": 1.33,
+     "epaisseur_totale_cm": 7.4
+    },
+    {
+     "nom": "Comble perdus",
+     "type_paroi": "Plancher haut",
+     "nature": "Sous combles perdus",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Laine de roche 0.035",
+       "epaisseur_cm": 45.0,
+       "lambda_W_mK": 0.035,
+       "masse_vol_kg_m3": 25.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 12.86
+      },
+      {
+       "materiau": "Plâtre gypse",
+       "epaisseur_cm": 1.0,
+       "lambda_W_mK": 0.42,
+       "masse_vol_kg_m3": 1200.0,
+       "chaleur_massique_Wh_kgK": 0.232,
+       "R_m2K_W": 0.02
+      }
+     ],
+     "R_total_m2K_W": 12.88,
+     "Up_pleiades": 0.08,
+     "epaisseur_totale_cm": 46.0
+    },
+    {
+     "nom": "Plancher bas",
+     "type_paroi": "Plancher bas",
+     "nature": "Terre plein",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Knauf XTherm Sol Th30 - 70",
+       "epaisseur_cm": 7.0,
+       "lambda_W_mK": 0.031,
+       "masse_vol_kg_m3": 19.0,
+       "chaleur_massique_Wh_kgK": 0.403,
+       "R_m2K_W": 2.25
+      },
+      {
+       "materiau": "Béton lourd",
+       "epaisseur_cm": 15.0,
+       "lambda_W_mK": 1.75,
+       "masse_vol_kg_m3": 2300.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 0.09
+      },
+      {
+       "materiau": "TMS 40 mm 1200 x1000",
+       "epaisseur_cm": 4.0,
+       "lambda_W_mK": 0.022,
+       "masse_vol_kg_m3": 35.0,
+       "chaleur_massique_Wh_kgK": 0.417,
+       "R_m2K_W": 1.85
+      },
+      {
+       "materiau": "Béton lourd",
+       "epaisseur_cm": 4.0,
+       "lambda_W_mK": 1.75,
+       "masse_vol_kg_m3": 2300.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 0.02
+      }
+     ],
+     "R_total_m2K_W": 4.21,
+     "Up_pleiades": 0.23,
+     "epaisseur_totale_cm": 30.0
+    }
+   ],
+   "parois_opaques": [
+    {
+     "nature": "Plancher haut",
+     "libelle": "Comble perdus",
+     "systeme_constructif": "",
+     "ep_isolant_cm": 45.0,
+     "R_isolant": 12.86,
+     "origine": "Marquage CE",
+     "Up": 0.08,
+     "surface_m2": 133.23,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Cloison légère",
+     "systeme_constructif": "Autre :",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "Marquage CE",
+     "Up": 1.09,
+     "surface_m2": 133.23,
+     "b": "Tampon (b= 0.2)"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Mur extérieur",
+     "systeme_constructif": "Isolation thermique par l'intérieur",
+     "ep_isolant_cm": 14.0,
+     "R_isolant": 4.35,
+     "origine": "Marquage CE",
+     "Up": 0.21,
+     "surface_m2": 109.53,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Porte d'entrée - Modèle EQUATION BEL'M",
+     "systeme_constructif": "Autre : Porte",
+     "ep_isolant_cm": 5.0,
+     "R_isolant": 1.2,
+     "origine": "Marquage CE",
+     "Up": 1.3,
+     "surface_m2": 1.94,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Coffre Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "systeme_constructif": "Autre : Coffre",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "Valeur Th-bât",
+     "Up": 1.2,
+     "surface_m2": 2.06,
+     "b": "Extérieur"
+    }
+   ],
+   "menuiseries": [
+    {
+     "orientation": "Ouest",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.38,
+     "Tl": 0.57,
+     "surface_m2": 3.5
+    },
+    {
+     "orientation": "Est",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.26,
+     "Tl": 0.37,
+     "surface_m2": 3.0
+    },
+    {
+     "orientation": "Ouest",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.28,
+     "Tl": 0.41,
+     "surface_m2": 2.42
+    },
+    {
+     "orientation": "Nord",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.24,
+     "Tl": 0.34,
+     "surface_m2": 1.84
+    },
+    {
+     "orientation": "Sud",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.3,
+     "Tl": 0.35,
+     "surface_m2": 1.5
+    },
+    {
+     "orientation": "Nord",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.2,
+     "Tl": 0.26,
+     "surface_m2": 0.66
+    },
+    {
+     "orientation": "Sud",
+     "type": "Fenêtre",
+     "libelle": "Fenêtre PVC - 2 vantaux - 1.4 x 1.25",
+     "protection": "Volet avec gestion manuelle motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.25,
+     "Tl": 0.28,
+     "surface_m2": 0.63
+    }
+   ],
+   "ponts_thermiques": [
+    {
+     "nom": "ITI 4.2.2-Murs en maç. courante",
+     "classe": "4.2",
+     "origine": "CSTB",
+     "psi_W_mK": 0.12
+    },
+    {
+     "nom": "ITI 4.1.1-angle sortant",
+     "classe": "4.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.02
+    },
+    {
+     "nom": "ITI 3.1.10-Mur façade maç. courante",
+     "classe": "3.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.04
+    },
+    {
+     "nom": "ITI 5.1.1-Appui déporté et men. nu intérieur-compl. isol. derrière appui",
+     "classe": "5.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.13
+    },
+    {
+     "nom": "ITI 5.2.1-Men. au nu intérieur",
+     "classe": "5.2",
+     "origine": "CSTB",
+     "psi_W_mK": 0.0
+    },
+    {
+     "nom": "ITI 5.3.1-Men. au nu intérieur",
+     "classe": "5.3",
+     "origine": "CSTB",
+     "psi_W_mK": 0.0
+    }
+   ],
+   "resultats": {
+    "besoin_chauffage": 20.5,
+    "besoin_froid": 4.6,
+    "besoin_eclairage": 2.4,
+    "Bbio": 62.4,
+    "Bbio_max": 65.6,
+    "conso_chauffage": 32.31,
+    "conso_froid": 8.74,
+    "conso_ecs": 12.88,
+    "conso_eclairage": 5.75,
+    "Cep": 62.6,
+    "Cep_max": 62.7,
+    "Cep_nr": 36.5,
+    "Cep_nr_max": 46.0,
+    "Ic_energie": 73.52,
+    "Ic_energie_max": 133.82,
+    "deperditions_W_K": 90.0,
+    "deperditions_opaques_W_K": 67.7,
+    "deperditions_vitrees_W_K": 18.29,
+    "deperditions_ponts_W_K": 4.07
+   }
+  },
+  {
+   "id": "domene_a180",
+   "libelle": "MI Domène A180 (38) — brique Gélis + PU, tests multiples",
+   "usage": "maison individuelle",
+   "source": "rapport d'étude Pléiades (.odt) fourni par DEEP-WATT",
+   "projet": {
+    "departement": "38",
+    "zone": "H1c",
+    "altitude_m": 220,
+    "generateurs": [
+     "ERLQ008CV3 + EHVZ08S18CB3V - Taille 8 - Ball. 180L"
+    ]
+   },
+   "compositions": [
+    {
+     "nom": "TOITURE RAMPANT",
+     "type_paroi": "Plancher haut",
+     "nature": "Rampants",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Polyuréthane TMS 0.020",
+       "epaisseur_cm": 15.0,
+       "lambda_W_mK": 0.02,
+       "masse_vol_kg_m3": 30.0,
+       "chaleur_massique_Wh_kgK": 0.417,
+       "R_m2K_W": 7.5
+      },
+      {
+       "materiau": "Laine de bois",
+       "epaisseur_cm": 15.0,
+       "lambda_W_mK": 0.042,
+       "masse_vol_kg_m3": 140.0,
+       "chaleur_massique_Wh_kgK": 0.583,
+       "R_m2K_W": 3.57
+      },
+      {
+       "materiau": "Lame d'air > 1.3 cm 1",
+       "epaisseur_cm": 1.5,
+       "lambda_W_mK": 0.094,
+       "masse_vol_kg_m3": 1.0,
+       "chaleur_massique_Wh_kgK": 0.34,
+       "R_m2K_W": 0.16
+      },
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 11.27,
+     "Up_pleiades": 0.09,
+     "epaisseur_totale_cm": 32.8
+    },
+    {
+     "nom": "CLOISON LEGERE",
+     "type_paroi": "Paroi verticale",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      },
+      {
+       "materiau": "Air",
+       "epaisseur_cm": 4.8,
+       "lambda_W_mK": 0.025,
+       "masse_vol_kg_m3": 1.0,
+       "chaleur_massique_Wh_kgK": 0.28,
+       "R_m2K_W": 1.92
+      },
+      {
+       "materiau": "Placoplatre BA 13",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.325,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 2.0,
+     "Up_pleiades": 0.46,
+     "epaisseur_totale_cm": 7.4
+    },
+    {
+     "nom": "PLANCHER INTERMEDIAIRE",
+     "type_paroi": "Plancher haut",
+     "nature": "Sous combles perdus",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Hourdis de 20 en béton",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 1.333,
+       "masse_vol_kg_m3": 1300.0,
+       "chaleur_massique_Wh_kgK": 0.18,
+       "R_m2K_W": 0.15
+      },
+      {
+       "materiau": "Polyuréthane TMS 0.020",
+       "epaisseur_cm": 15.0,
+       "lambda_W_mK": 0.02,
+       "masse_vol_kg_m3": 30.0,
+       "chaleur_massique_Wh_kgK": 0.417,
+       "R_m2K_W": 7.5
+      },
+      {
+       "materiau": "Mortier",
+       "epaisseur_cm": 5.0,
+       "lambda_W_mK": 1.15,
+       "masse_vol_kg_m3": 2000.0,
+       "chaleur_massique_Wh_kgK": 0.233,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 7.69,
+     "Up_pleiades": 0.13,
+     "epaisseur_totale_cm": 40.0
+    },
+    {
+     "nom": "MUR EXTERIEUR 4",
+     "type_paroi": "Non définie",
+     "nature": "Non définie",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Enduit extérieur",
+       "epaisseur_cm": 2.0,
+       "lambda_W_mK": 1.15,
+       "masse_vol_kg_m3": 1700.0,
+       "chaleur_massique_Wh_kgK": 0.278,
+       "R_m2K_W": 0.02
+      },
+      {
+       "materiau": "Polyuréthane TMS 0.020",
+       "epaisseur_cm": 13.3,
+       "lambda_W_mK": 0.02,
+       "masse_vol_kg_m3": 30.0,
+       "chaleur_massique_Wh_kgK": 0.417,
+       "R_m2K_W": 6.67
+      },
+      {
+       "materiau": "Brique Gélis 30",
+       "epaisseur_cm": 30.0,
+       "lambda_W_mK": 0.15,
+       "masse_vol_kg_m3": 808.0,
+       "chaleur_massique_Wh_kgK": 0.22,
+       "R_m2K_W": 2.0
+      },
+      {
+       "materiau": "Polyuréthane TMS 0.020",
+       "epaisseur_cm": 6.7,
+       "lambda_W_mK": 0.02,
+       "masse_vol_kg_m3": 30.0,
+       "chaleur_massique_Wh_kgK": 0.417,
+       "R_m2K_W": 3.33
+      },
+      {
+       "materiau": "Placoplatre BA 10",
+       "epaisseur_cm": 1.0,
+       "lambda_W_mK": 0.333,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.03
+      }
+     ],
+     "R_total_m2K_W": 12.04,
+     "Up_pleiades": 0.08,
+     "epaisseur_totale_cm": 53.0
+    },
+    {
+     "nom": "PLANCHER BAS 2",
+     "type_paroi": "Non définie",
+     "nature": "Non définie",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Polyuréthane",
+       "epaisseur_cm": 40.0,
+       "lambda_W_mK": 0.03,
+       "masse_vol_kg_m3": 35.0,
+       "chaleur_massique_Wh_kgK": 0.232,
+       "R_m2K_W": 13.33
+      },
+      {
+       "materiau": "Béton lourd",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 1.75,
+       "masse_vol_kg_m3": 2300.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 0.11
+      }
+     ],
+     "R_total_m2K_W": 13.45,
+     "Up_pleiades": 0.07,
+     "epaisseur_totale_cm": 60.0
+    }
+   ],
+   "parois_opaques": [
+    {
+     "nature": "Plancher haut",
+     "libelle": "TOITURE RAMPANT",
+     "systeme_constructif": "",
+     "ep_isolant_cm": 30.0,
+     "R_isolant": 11.07,
+     "origine": "Marquage CE",
+     "Up": 0.09,
+     "surface_m2": 72.47,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Passif-Porte très isolante",
+     "systeme_constructif": "Autre : Porte",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 0.8,
+     "surface_m2": 3.97,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Paroi non définie",
+     "systeme_constructif": "",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "19.99",
+     "Up": 10.0,
+     "surface_m2": null,
+     "b": "0.08"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "155.73",
+     "systeme_constructif": "Extérieur",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 40.0,
+     "surface_m2": 13.33,
+     "b": "Marquage CE"
+    }
+   ],
+   "menuiseries": [
+    {
+     "orientation": "Est",
+     "type": "Fenêtre",
+     "libelle": "Porte-fenêtre PVC double vitrage avec volet",
+     "protection": "Volet avec gestion manuelle non motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV __ PE Air",
+     "Ug": 0.0,
+     "Uw": 3.0,
+     "origine_Uw": "Calcul Th-Bât",
+     "Sw": 0.34,
+     "Tl": 0.28,
+     "surface_m2": 3.04
+    },
+    {
+     "orientation": "Sud",
+     "type": "Fenêtre",
+     "libelle": "Fenetre double vitrage",
+     "protection": "Store enroulable avec gestion manuelle non motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.35,
+     "Tl": 0.41,
+     "surface_m2": 5.86
+    },
+    {
+     "orientation": "Sud",
+     "type": "Fenêtre",
+     "libelle": "Fenetre double vitrage",
+     "protection": "Store enroulable avec gestion manuelle non motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.3,
+     "Tl": 0.29,
+     "surface_m2": 3.03
+    },
+    {
+     "orientation": "Nord",
+     "type": "Fenêtre",
+     "libelle": "Fenetre double vitrage",
+     "protection": "Store enroulable avec gestion manuelle non motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.26,
+     "Tl": 0.29,
+     "surface_m2": 3.03
+    },
+    {
+     "orientation": "Nord",
+     "type": "Fenêtre",
+     "libelle": "Fenetre double vitrage",
+     "protection": "Store enroulable avec gestion manuelle non motorisée",
+     "cadre": "PVC",
+     "vitrage": "DV 4_20_4 GC Argon",
+     "Ug": 0.0,
+     "Uw": 1.35,
+     "origine_Uw": "Avis Technique",
+     "Sw": 0.21,
+     "Tl": 0.28,
+     "surface_m2": 1.21
+    }
+   ],
+   "ponts_thermiques": [
+    {
+     "nom": "ITE 4.3.2-Refend maç. courante",
+     "classe": "4.3",
+     "origine": "CSTB",
+     "psi_W_mK": 0.04
+    },
+    {
+     "nom": "ITI 5.2.1-Men. au nu intérieur",
+     "classe": "5.2",
+     "origine": "CSTB",
+     "psi_W_mK": 0.0
+    },
+    {
+     "nom": "ITI 5.3.1-Men. au nu intérieur",
+     "classe": "5.3",
+     "origine": "CSTB",
+     "psi_W_mK": 0.0
+    },
+    {
+     "nom": "ITI.6.4.a-Pl. bas sur VS ou LNC isolé sous chape sans remontée d'isolant",
+     "classe": "5.1",
+     "origine": "CSTB",
+     "psi_W_mK": 0.28
+    }
+   ],
+   "resultats": {
+    "besoin_chauffage": 27.7,
+    "besoin_froid": 2.1,
+    "besoin_eclairage": 2.2,
+    "Bbio": 70.4,
+    "Bbio_max": 84.7,
+    "conso_chauffage": 22.08,
+    "conso_froid": 1.15,
+    "conso_ecs": 24.15,
+    "conso_eclairage": 5.06,
+    "Cep": 57.0,
+    "Cep_max": 79.5,
+    "Cep_nr": 57.0,
+    "Cep_nr_max": 58.3,
+    "Ic_energie": 68.8,
+    "Ic_energie_max": 169.6,
+    "deperditions_W_K": 78.0,
+    "deperditions_opaques_W_K": 26.34,
+    "deperditions_vitrees_W_K": 26.85,
+    "deperditions_ponts_W_K": 24.34
+   }
+  },
+  {
+   "id": "formation_opco_tertiaire",
+   "libelle": "Cas de formation Pléiades OPCO (67) — extension tertiaire MOB",
+   "usage": "tertiaire (formation)",
+   "source": "rapport d'étude Pléiades (.odt) fourni par DEEP-WATT",
+   "projet": {
+    "departement": "67",
+    "zone": "H1b",
+    "altitude_m": 156,
+    "generateurs": []
+   },
+   "compositions": [
+    {
+     "nom": "1a - Pl. bas sur TP EXTENSION",
+     "type_paroi": "Plancher bas",
+     "nature": "Terre plein",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "PSE TH 33",
+       "epaisseur_cm": 23.0,
+       "lambda_W_mK": 0.033,
+       "masse_vol_kg_m3": 25.0,
+       "chaleur_massique_Wh_kgK": 0.383,
+       "R_m2K_W": 6.97
+      },
+      {
+       "materiau": "Béton plein armé",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 2.3,
+       "masse_vol_kg_m3": 2350.0,
+       "chaleur_massique_Wh_kgK": 0.278,
+       "R_m2K_W": 0.09
+      }
+     ],
+     "R_total_m2K_W": 7.06,
+     "Up_pleiades": 0.14,
+     "epaisseur_totale_cm": 43.0
+    },
+    {
+     "nom": "3a - Toiture terrasse EXTENSION",
+     "type_paroi": "Plancher haut",
+     "nature": "Terrasse",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "PU TH22",
+       "epaisseur_cm": 24.0,
+       "lambda_W_mK": 0.022,
+       "masse_vol_kg_m3": 35.0,
+       "chaleur_massique_Wh_kgK": 0.232,
+       "R_m2K_W": 10.91
+      },
+      {
+       "materiau": "Béton plein armé",
+       "epaisseur_cm": 22.0,
+       "lambda_W_mK": 2.3,
+       "masse_vol_kg_m3": 2350.0,
+       "chaleur_massique_Wh_kgK": 0.278,
+       "R_m2K_W": 0.1
+      }
+     ],
+     "R_total_m2K_W": 11.0,
+     "Up_pleiades": 0.09,
+     "epaisseur_totale_cm": 46.0
+    },
+    {
+     "nom": "Cloison acoustique",
+     "type_paroi": "Paroi verticale",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Plâtre + cellulose",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.3,
+       "masse_vol_kg_m3": 1200.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      },
+      {
+       "materiau": "Laine de chanvre",
+       "epaisseur_cm": 6.0,
+       "lambda_W_mK": 0.039,
+       "masse_vol_kg_m3": 25.0,
+       "chaleur_massique_Wh_kgK": 0.389,
+       "R_m2K_W": 1.54
+      },
+      {
+       "materiau": "Plâtre + cellulose",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.3,
+       "masse_vol_kg_m3": 1200.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.04
+      }
+     ],
+     "R_total_m2K_W": 1.63,
+     "Up_pleiades": 0.56,
+     "epaisseur_totale_cm": 8.6
+    },
+    {
+     "nom": "MOB isolant",
+     "type_paroi": "Paroi verticale",
+     "nature": "Mur extérieur",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Laine de roche TH 38",
+       "epaisseur_cm": 8.0,
+       "lambda_W_mK": 0.038,
+       "masse_vol_kg_m3": 37.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 2.11
+      },
+      {
+       "materiau": "Panneau OSB",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.13,
+       "masse_vol_kg_m3": 650.0,
+       "chaleur_massique_Wh_kgK": 0.472,
+       "R_m2K_W": 0.1
+      },
+      {
+       "materiau": "Ouate de cellulose insufflée TH 42",
+       "epaisseur_cm": 24.0,
+       "lambda_W_mK": 0.042,
+       "masse_vol_kg_m3": 23.0,
+       "chaleur_massique_Wh_kgK": 0.389,
+       "R_m2K_W": 5.71
+      },
+      {
+       "materiau": "Panneau OSB",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.13,
+       "masse_vol_kg_m3": 650.0,
+       "chaleur_massique_Wh_kgK": 0.472,
+       "R_m2K_W": 0.1
+      },
+      {
+       "materiau": "Laine de roche TH 38",
+       "epaisseur_cm": 6.0,
+       "lambda_W_mK": 0.038,
+       "masse_vol_kg_m3": 37.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 1.58
+      },
+      {
+       "materiau": "Placoplatre BA 18",
+       "epaisseur_cm": 1.8,
+       "lambda_W_mK": 0.36,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.05
+      }
+     ],
+     "R_total_m2K_W": 9.65,
+     "Up_pleiades": 0.14,
+     "epaisseur_totale_cm": 42.4
+    },
+    {
+     "nom": "MOB montant",
+     "type_paroi": "Paroi verticale",
+     "nature": "Mur extérieur",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Laine de roche TH 38",
+       "epaisseur_cm": 8.0,
+       "lambda_W_mK": 0.038,
+       "masse_vol_kg_m3": 37.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 2.11
+      },
+      {
+       "materiau": "Panneau OSB",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.13,
+       "masse_vol_kg_m3": 650.0,
+       "chaleur_massique_Wh_kgK": 0.472,
+       "R_m2K_W": 0.1
+      },
+      {
+       "materiau": "Bois montant",
+       "epaisseur_cm": 24.0,
+       "lambda_W_mK": 0.13,
+       "masse_vol_kg_m3": 500.0,
+       "chaleur_massique_Wh_kgK": 0.333,
+       "R_m2K_W": 1.85
+      },
+      {
+       "materiau": "Panneau OSB",
+       "epaisseur_cm": 1.3,
+       "lambda_W_mK": 0.13,
+       "masse_vol_kg_m3": 650.0,
+       "chaleur_massique_Wh_kgK": 0.472,
+       "R_m2K_W": 0.1
+      },
+      {
+       "materiau": "Laine de roche TH 38",
+       "epaisseur_cm": 6.0,
+       "lambda_W_mK": 0.038,
+       "masse_vol_kg_m3": 37.0,
+       "chaleur_massique_Wh_kgK": 0.256,
+       "R_m2K_W": 1.58
+      },
+      {
+       "materiau": "Placoplatre BA 18",
+       "epaisseur_cm": 1.8,
+       "lambda_W_mK": 0.36,
+       "masse_vol_kg_m3": 850.0,
+       "chaleur_massique_Wh_kgK": 0.222,
+       "R_m2K_W": 0.05
+      }
+     ],
+     "R_total_m2K_W": 5.78,
+     "Up_pleiades": 0.21,
+     "epaisseur_totale_cm": 42.4
+    },
+    {
+     "nom": "Plancher intermédiaire",
+     "type_paroi": "Plancher bas",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Béton plein armé",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 2.3,
+       "masse_vol_kg_m3": 2350.0,
+       "chaleur_massique_Wh_kgK": 0.278,
+       "R_m2K_W": 0.09
+      }
+     ],
+     "R_total_m2K_W": 0.09,
+     "Up_pleiades": 3.33,
+     "epaisseur_totale_cm": 20.0
+    },
+    {
+     "nom": "Refend 20",
+     "type_paroi": "Paroi verticale",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Béton plein armé",
+       "epaisseur_cm": 20.0,
+       "lambda_W_mK": 2.3,
+       "masse_vol_kg_m3": 2350.0,
+       "chaleur_massique_Wh_kgK": 0.278,
+       "R_m2K_W": 0.09
+      }
+     ],
+     "R_total_m2K_W": 0.09,
+     "Up_pleiades": 3.85,
+     "epaisseur_totale_cm": 20.0
+    },
+    {
+     "nom": "2f - cloison intérieure entre existant et extension",
+     "type_paroi": "Paroi verticale",
+     "nature": "Autre",
+     "origine_isolant": "Marquage CE système 1+",
+     "composante": "Simple",
+     "couches": [
+      {
+       "materiau": "Laine de verre TH32",
+       "epaisseur_cm": 12.0,
+       "lambda_W_mK": 0.032,
+       "masse_vol_kg_m3": 29.0,
+       "chaleur_massique_Wh_kgK": 0.286,
+       "R_m2K_W": 3.75
+      },
+      {
+       "materiau": "Pare-vapeur",
+       "epaisseur_cm": 0.1,
+       "lambda_W_mK": 0.0,
+       "masse_vol_kg_m3": null,
+       "chaleur_massique_Wh_kgK": 0.27,
+       "R_m2K_W": null
+      }
+     ],
+     "R_total_m2K_W": null,
+     "Up_pleiades": 0.26,
+     "epaisseur_totale_cm": 12.1
+    }
+   ],
+   "parois_opaques": [
+    {
+     "nature": "Plancher bas",
+     "libelle": "1a - Pl. bas sur TP EXTENSION",
+     "systeme_constructif": "",
+     "ep_isolant_cm": 23.0,
+     "R_isolant": 6.97,
+     "origine": "Marquage CE",
+     "Up": 0.12,
+     "surface_m2": 1132.16,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Plancher haut",
+     "libelle": "3a - Toiture terrasse EXTENSION",
+     "systeme_constructif": "",
+     "ep_isolant_cm": 24.0,
+     "R_isolant": 10.91,
+     "origine": "Marquage CE",
+     "Up": 0.09,
+     "surface_m2": 1131.0,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "2a - MOB bardage métallique EXTENSION",
+     "systeme_constructif": "Ossature bois",
+     "ep_isolant_cm": 38.0,
+     "R_isolant": 9.4,
+     "origine": "Marquage CE",
+     "Up": 0.15,
+     "surface_m2": 799.93,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "2f - cloison intérieure entre existant et extension",
+     "systeme_constructif": "Autre :",
+     "ep_isolant_cm": 12.0,
+     "R_isolant": 3.75,
+     "origine": "Marquage CE",
+     "Up": 0.25,
+     "surface_m2": 191.73,
+     "b": "Tampon (b= 0.2)"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Coffre EXTENSION - fenêtre courante",
+     "systeme_constructif": "Autre : Coffre",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 0.24,
+     "surface_m2": 25.64,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Coffre EXTENSION - fenêtre courante sur patio",
+     "systeme_constructif": "Autre : Coffre",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 0.24,
+     "surface_m2": 18.9,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Porte pleine extension",
+     "systeme_constructif": "Autre : Porte",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 1.5,
+     "surface_m2": 2.94,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Coffre EXTENSION - PF courantes patio",
+     "systeme_constructif": "Autre : Coffre",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 0.24,
+     "surface_m2": 2.03,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Coffre EXTENSION - fenêtre angle",
+     "systeme_constructif": "Autre : Coffre",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 0.24,
+     "surface_m2": 1.96,
+     "b": "Extérieur"
+    },
+    {
+     "nature": "Paroi verticale",
+     "libelle": "Porte intérieure bois",
+     "systeme_constructif": "Autre : Porte",
+     "ep_isolant_cm": null,
+     "R_isolant": null,
+     "origine": "",
+     "Up": 1.7,
+     "surface_m2": 22.58,
+     "b": "Tampon (b= 0.2)"
+    }
+   ],
+   "menuiseries": [],
+   "ponts_thermiques": [],
+   "resultats": {
+    "besoin_chauffage": 7.3,
+    "besoin_froid": 7.1,
+    "besoin_eclairage": 10.0,
+    "Bbio": 79.0,
+    "Bbio_max": 97.1,
+    "conso_chauffage": 5.3,
+    "conso_froid": 1.61,
+    "conso_ecs": 4.83,
+    "conso_eclairage": 12.88,
+    "Cep": 34.5,
+    "Cep_max": 86.7,
+    "Cep_nr": 30.7,
+    "Cep_nr_max": 76.5,
+    "Ic_energie": 52.34,
+    "Ic_energie_max": 285.6,
+    "deperditions_W_K": 843.0,
+    "deperditions_opaques_W_K": 390.96,
+    "deperditions_vitrees_W_K": 329.77,
+    "deperditions_ponts_W_K": 121.94
+   }
+  }
+ ]
+}

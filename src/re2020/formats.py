@@ -5,7 +5,7 @@
   leurs contours fermés deviennent des aplats. Les hachures (isolant) sont dessinées ligne par ligne.
 - DWG : format fermé, converti en DXF SUR LE POSTE par ODA File Converter (gratuit) ou LibreDWG (dwg2dxf) s'ils
   sont installés ; aucun fichier n'est envoyé à l'extérieur.
-- Word (.docx), Excel (.xlsx), texte (.txt, .csv) : lus par documents.lecture comme une notice.
+- Word (.docx), LibreOffice (.odt, .ods, dont les rapports Pléiades), Excel (.xlsx), texte (.txt, .csv) : lus par documents.lecture comme une notice.
 - Images : conservées mais non lues (pas de géométrie exploitable dans un scan).
 """
 from __future__ import annotations
@@ -18,7 +18,7 @@ import tempfile
 from pathlib import Path
 
 PLANS = {".pdf", ".dxf", ".dwg"}
-DOCUMENTS = {".pdf", ".docx", ".xlsx", ".xlsm", ".txt", ".csv"}
+DOCUMENTS = {".pdf", ".docx", ".odt", ".ods", ".xlsx", ".xlsm", ".txt", ".csv"}
 IMAGES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}
 ACCEPTES = PLANS | DOCUMENTS | IMAGES
 

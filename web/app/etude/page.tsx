@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { BarresH, BarresPaires, Jauge } from "@/components/Graphiques";
 import { LegendeProvenance, Pastille, V, Verdict } from "@/components/Valeurs";
-import { api, suppositions, type Etude, type Valeur } from "@/lib/api";
+import { api, suppositions, type Etude, type ParoiProposee, type Valeur } from "@/lib/api";
 import { date, euros, libelle, nombre } from "@/lib/format";
 
 const NOMS_HYPOTHESES: Record<string, string> = {
@@ -34,6 +34,15 @@ const SECTIONS = [
   ["synthese", "Synthèse"], ["dossier", "Dossier lu"], ["plan", "Plan lu"], ["enveloppe", "Enveloppe"], ["ponts", "Ponts thermiques"],
   ["propositions", "Propositions"], ["acv", "ACV"], ["hypotheses", "À valider"],
 ] as const;
+
+function ParoiCellule({ p }: { p: ParoiProposee }) {
+  return (
+    <>
+      {p.composition ?? `${p.isolant} ${p.epaisseur_cm} cm`}
+      <div className="muet chiffres">{p.systeme ? `${p.systeme} · ` : ""}U {nombre(p.U, 3)}</div>
+    </>
+  );
+}
 
 export default function Page() {
   return <Suspense fallback={<div className="chargement">Chargement</div>}><FicheEtude /></Suspense>;
@@ -276,9 +285,9 @@ function FicheEtude() {
                   {e.propositions.propositions.map((x) => (
                     <tr key={x.rang}>
                       <td className="rang">{x.rang}</td>
-                      <td>{x.murs.isolant}<div className="muet chiffres">{x.murs.epaisseur_cm} cm · U {nombre(x.murs.U, 3)}</div></td>
-                      <td>{x.toiture.isolant}<div className="muet chiffres">{x.toiture.epaisseur_cm} cm · U {nombre(x.toiture.U, 3)}</div></td>
-                      <td>{x.plancher_bas.isolant}<div className="muet chiffres">{x.plancher_bas.epaisseur_cm} cm · U {nombre(x.plancher_bas.U, 3)}</div></td>
+                      <td><ParoiCellule p={x.murs} /></td>
+                      <td><ParoiCellule p={x.toiture} /></td>
+                      <td><ParoiCellule p={x.plancher_bas} /></td>
                       <td>{x.menuiseries.nom}<div className="muet chiffres">Uw {nombre(x.menuiseries.Uw, 2)} · Sw {nombre(x.menuiseries.Sw, 2)}</div></td>
                       <td>{x.systeme}</td>
                       <td className="n chiffres">{nombre(x.Bbio.valeur, 1)}<div className="muet">marge {nombre(x.marges.Bbio, 1)}</div></td>
@@ -290,6 +299,58 @@ function FicheEtude() {
               </table>
             </div>
           ) : <div className="carte vide">Aucune combinaison du catalogue ne passe les seuils estimés</div>}
+          {e.propositions.propositions[0]?.murs.couches ? (
+            <>
+              <h3 style={{ marginTop: 24 }}>Compositions à créer dans Pléiades (proposition n°1)</h3>
+              <div className="colonnes-2">
+                {(["murs", "toiture", "plancher_bas"] as const).map((k) => {
+                  const p = e.propositions.propositions[0][k];
+                  return (
+                    <div className="carte tableau-conteneur" key={k}>
+                      <div className="carte-corps" style={{ paddingBottom: 0 }}>
+                        <strong>{{ murs: "Mur extérieur", toiture: "Plancher haut / toiture", plancher_bas: "Plancher bas" }[k]}</strong>
+                        <div className="muet">{p.systeme} · {nombre(p.epaisseur_totale_cm ?? 0, 1)} cm · U {nombre(p.U, 3)}</div>
+                      </div>
+                      <table>
+                        <thead><tr><th>Couche (ext. → int.)</th><th className="n">Ép. (cm)</th><th className="n">λ</th><th className="n">R</th></tr></thead>
+                        <tbody>
+                          {(p.couches ?? []).map((c, i) => (
+                            <tr key={i}>
+                              <td>{c.materiau}{c.isolant && c.certifie === false ? <div className="muet">non certifié : λ +15 %</div> : null}</td>
+                              <td className="n chiffres">{nombre(c.epaisseur_cm, 1)}</td>
+                              <td className="n chiffres">{c.lambda_W_mK ? nombre(c.lambda_W_mK, 3) : "—"}</td>
+                              <td className="n chiffres">{nombre(c.R_m2K_W, 2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : null}
+          {e.propositions.variantes?.murs?.length ? (
+            <>
+              <h3 style={{ marginTop: 24 }}>Autres systèmes au même U que la proposition n°1</h3>
+              <div className="carte tableau-conteneur">
+                <table>
+                  <thead><tr><th>Paroi</th><th>Système</th><th>Composition (ext. → int.)</th><th className="n">U</th><th className="n">Coût indicatif</th></tr></thead>
+                  <tbody>
+                    {(["murs", "toiture", "plancher_bas"] as const).flatMap((k) => (e.propositions.variantes?.[k] ?? []).map((v, i) => (
+                      <tr key={k + i}>
+                        <td>{{ murs: "Murs", toiture: "Toiture", plancher_bas: "Plancher bas" }[k]}</td>
+                        <td>{v.systeme}</td>
+                        <td>{v.composition}</td>
+                        <td className="n chiffres">{nombre(v.U, 3)}</td>
+                        <td className="n chiffres">{euros(v.cout_eur ?? null)}</td>
+                      </tr>
+                    )))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : null}
         </section>
 
         {/* ------------------------------------------------ ACV */}

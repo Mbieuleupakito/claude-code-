@@ -1,7 +1,7 @@
 """Générateur de propositions : combinaisons isolant / épaisseur / menuiserie / système qui respectent
 les seuils RE2020 estimés, classées par coût quand un prix existe.
 
-Méthode : pour chaque paroi, front de Pareto (U, coût) des couples isolant x épaisseur du catalogue ;
+Méthode : pour chaque paroi, front de Pareto (U, coût) des compositions complètes (systèmes constructifs x isolant x épaisseur) ;
 puis combinaisons de ces fronts x menuiseries x systèmes, évaluées avec le modèle simplifié. Une
 combinaison est retenue si Bbio, Cep et Cep,nr estimés restent sous les seuils avec une marge de
 prudence (l'estimation n'est pas un calcul réglementaire). Les seuils « approx » (MbHSP inconnu) sont
@@ -12,29 +12,22 @@ from __future__ import annotations
 import itertools
 from dataclasses import replace
 
+from . import compositions
 from .catalogues import Catalogue
-from .catalogues.parois import RSI_RSE
 from .estimation.modele import K_CAL, Entrees, _brut, consommations, estimer
 from .trace import val
 
-EPAISSEURS_CM = {"mur": range(10, 32, 2), "plafond": range(20, 44, 4), "plancher_bas": range(8, 24, 2)}
-R_SUPPORT = {"mur": 0.20, "plafond": 0.03, "plancher_bas": 0.12}  # maçonnerie / plâtre / hourdis (supposés)
-TYPE_PAROI = {"mur": "mur_ext", "plafond": "plafond", "plancher_bas": "plancher_bas"}
 SURFACE = {"mur": "murs", "plafond": "toiture", "plancher_bas": "plancher_bas"}
 MARGE = 0.05  # 5 % sous le seuil
 
 
-def options_paroi(cat: Catalogue, usage: str, surface_m2: float) -> list[dict]:
-    """Front de Pareto (U croissant, coût décroissant) des isolants x épaisseurs pour une paroi."""
-    rsi, rse = RSI_RSE[TYPE_PAROI[usage]]
-    opts = []
-    for iso in cat.isolants(usage):
-        lam = iso["lambda_W_mK"] * (1.0 if iso["certifie"] else 1.15)
-        for ep in EPAISSEURS_CM[usage]:
-            u = 1 / (rsi + rse + R_SUPPORT[usage] + ep / 100 / lam)
-            prix = iso["prix_eur_m2_cm"] * ep * surface_m2 if iso["prix_eur_m2_cm"] is not None else None
-            opts.append({"isolant": iso["nom"], "epaisseur_cm": ep, "U": round(u, 3), "cout": prix,
-                         "certifie": iso["certifie"], "lambda_retenu": round(lam, 4)})
+def options_paroi(cat: Catalogue, usage: str, surface_m2: float, isolation: str | None = None,
+                  structure: str | None = None) -> list[dict]:
+    """Front de Pareto (U croissant, coût décroissant) des COMPOSITIONS complètes d'une paroi (système constructif
+    cohérent avec le projet x isolant compatible x épaisseur)."""
+    opts = compositions.options(usage, cat.isolants(), surface_m2, isolation, structure)
+    for o in opts:
+        o["lambda_retenu"] = next((c["lambda_W_mK"] for c in o["couches"] if c.get("isolant")), None)
     # front de Pareto : par coût croissant, on garde une option seulement si elle améliore U
     opts.sort(key=lambda o: (o["cout"] if o["cout"] is not None else 0, o["U"]))
     front, meilleur_u = [], float("inf")
@@ -50,11 +43,19 @@ def options_paroi(cat: Catalogue, usage: str, surface_m2: float) -> list[dict]:
     return front
 
 
-def proposer(e: Entrees, seuils: dict, cat: Catalogue | None = None, n: int = 5) -> dict:
-    """``e`` : entrées de base (géométrie, Ψ...) ; ``seuils`` : sortie de seuils_energie()."""
+def _paroi(o: dict) -> dict:
+    return {"isolant": o["isolant"], "epaisseur_cm": o["epaisseur_cm"], "U": o["U"], "systeme": o["systeme_nom"],
+            "composition": o["composition"], "couches": o["couches"], "epaisseur_totale_cm": o["epaisseur_totale_cm"],
+            "ref_projet": o.get("ref_projet")}
+
+
+def proposer(e: Entrees, seuils: dict, cat: Catalogue | None = None, n: int = 5, isolation: str | None = None,
+             structure: str | None = None) -> dict:
+    """``e`` : entrées de base (géométrie, Ψ...) ; ``seuils`` : sortie de seuils_energie(). ``isolation`` (ITE / ITI lu
+    sur le plan) et ``structure`` (lue dans la notice) restreignent les murs aux systèmes cohérents avec le projet."""
     cat = cat or Catalogue()
     smax = {k: seuils[k]["valeur"] for k in ("Bbio_max", "Cep_max", "Cep_nr_max")}
-    fronts = {u: options_paroi(cat, u, e.surfaces[SURFACE[u]]) for u in ("mur", "plafond", "plancher_bas")}
+    fronts = {u: options_paroi(cat, u, e.surfaces[SURFACE[u]], isolation, structure) for u in ("mur", "plafond", "plancher_bas")}
     s_baies = sum(e.baies.values())
     candidats = []
     for mur, toit, pb, men, sysm in itertools.product(fronts["mur"], fronts["plafond"], fronts["plancher_bas"],
@@ -90,9 +91,7 @@ def proposer(e: Entrees, seuils: dict, cat: Catalogue | None = None, n: int = 5)
             alertes.append("Le haut de la fourchette Bbio dépasse le seuil : marge à confirmer dans Pléiades.")
         out.append({
             "rang": i,
-            "murs": {"isolant": c["mur"]["isolant"], "epaisseur_cm": c["mur"]["epaisseur_cm"], "U": c["mur"]["U"]},
-            "toiture": {"isolant": c["toiture"]["isolant"], "epaisseur_cm": c["toiture"]["epaisseur_cm"], "U": c["toiture"]["U"]},
-            "plancher_bas": {"isolant": c["plancher_bas"]["isolant"], "epaisseur_cm": c["plancher_bas"]["epaisseur_cm"], "U": c["plancher_bas"]["U"]},
+            "murs": _paroi(c["mur"]), "toiture": _paroi(c["toiture"]), "plancher_bas": _paroi(c["plancher_bas"]),
             "menuiseries": {"nom": c["menuiserie"]["nom"], "Uw": c["menuiserie"]["Uw"], "Sw": c["menuiserie"]["Sw"]},
             "systeme": c["systeme"]["nom"],
             "Bbio": r["Bbio"], "Cep": r["Cep"], "Cep_nr": r["Cep_nr"],
@@ -109,6 +108,11 @@ def proposer(e: Entrees, seuils: dict, cat: Catalogue | None = None, n: int = 5)
                                    * len(cat.menuiseries()) * len(cat.systemes()),
         "nb_conformes": len(candidats),
         "propositions": out,
+        # autres systèmes constructifs qui atteignent le même U que la proposition n°1 (au choix du thermicien)
+        "variantes": {k: [_paroi(dict(o, systeme_nom=o["systeme_nom"])) | {"cout_eur": o["cout"]}
+                          for o in compositions.meilleures_par_systeme(u, cat.isolants(), out[0][k]["U"], e.surfaces[SURFACE[u]],
+                                                                       isolation, structure)]
+                      for k, u in (("murs", "mur"), ("toiture", "plafond"), ("plancher_bas", "plancher_bas"))} if out else {},
         "avertissement": ("Seuils « approx » (MbHSP/McHSP inconnus) : marges probablement sous-estimées. " if seuils["approx"] else "")
                          + "Propositions à vérifier dans Pléiades ; DH (confort d'été) non évalué.",
     }

@@ -32,19 +32,46 @@ class FormatNonLu(ValueError):
 
 # --------------------------------------------------------------------------- DWG → DXF
 
+def trouver_oda() -> str | None:
+    """Chemin d'ODA File Converter. L'installeur Windows crée un dossier versionné (« ODAFileConverter 26.4.0 ») que
+    ezdxf ne cherche pas : on le trouve et on l'indique à ezdxf."""
+    import glob
+
+    import ezdxf
+
+    candidats = []
+    for base in (os.environ.get("ProgramFiles", r"C:\Program Files"), os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+                 os.path.expanduser(r"~\AppData\Local\Programs")):
+        candidats += sorted(glob.glob(os.path.join(base, "ODA", "ODAFileConverter*", "ODAFileConverter.exe")), reverse=True)
+    candidats += glob.glob("/Applications/ODAFileConverter*.app/Contents/MacOS/ODAFileConverter")
+    candidats += [x for x in (shutil.which("ODAFileConverter"),) if x]
+    for c in candidats:
+        if os.path.isfile(c):
+            if c.lower().endswith(".exe"):
+                ezdxf.options.set("odafc-addon", "win_exec_path", f'"{c}"')
+            else:
+                ezdxf.options.set("odafc-addon", "unix_exec_path", c)
+            return c
+    return None
+
+
 def dwg_vers_dxf(dwg: Path, dossier_sortie: Path) -> Path:
     from ezdxf.addons import odafc
 
     sortie = dossier_sortie / (dwg.stem + ".dxf")
+    trouver_oda()
     if odafc.is_installed():
         odafc.convert(str(dwg), str(sortie), version="R2018", replace=True)
         return sortie
     if shutil.which("dwg2dxf"):
         subprocess.run(["dwg2dxf", "-y", "-o", str(sortie), str(dwg)], check=True, capture_output=True, timeout=300)
         return sortie
-    raise FormatNonLu(f"« {dwg.name} » est un DWG : installer ODA File Converter (gratuit, "
-                      "https://www.opendesign.com/guestfiles/oda_file_converter) pour qu'il soit converti sur ce poste, "
-                      "ou demander à l'architecte un PDF vectoriel ou un DXF.")
+    raise FormatNonLu(MESSAGE_DWG)
+
+
+MESSAGE_DWG = ("DWG non lus : installer ODA File Converter (gratuit, https://www.opendesign.com/guestfiles/oda_file_converter, "
+               "version Windows), puis relancer l'étude : les DWG seront convertis sur ce poste. Sinon demander à l'architecte "
+               "un PDF vectoriel ou un DXF.")
 
 
 # --------------------------------------------------------------------------- DXF → PDF vectoriel

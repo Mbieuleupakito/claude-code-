@@ -10,7 +10,7 @@ from .acv import CatalogueACV, estimer_acv
 from .catalogues import Catalogue
 from .documents import lire_dossier
 from .estimation import entrees_depuis_plan, estimer
-from .formats import preparer
+from .formats import MESSAGE_DWG, preparer
 from .localisation import candidats_saisie, localiser
 from .plans import extraire_plan
 from .plans.textes import famille, meme_repere, normaliser_niveau, sans_accents
@@ -64,7 +64,10 @@ def realiser_etude(fichiers, p: Parametres, catalogue: Catalogue | None = None,
     e = etude_depuis_plan(plan, p, catalogue, catalogue_acv, dossier)
     e["fichiers"] = {"plans": [f.name for f in prep["plans"]], "documents": [f.name for f in prep["documents"]],
                      "non_lus": non_lus}
-    e["alertes"] = [f"Fichier non lu : {x}" for x in non_lus] + e["alertes"]
+    dwg = [nom for nom, raison in prep["non_lus"] if raison == MESSAGE_DWG]
+    autres = [f"{nom} : {raison}" for nom, raison in prep["non_lus"] if raison != MESSAGE_DWG]
+    e["alertes"] = ([f"{len(dwg)} fichier(s) {MESSAGE_DWG} ({', '.join(dwg)})"] if dwg else []) \
+        + [f"Fichier non lu : {x}" for x in autres] + e["alertes"]
     return e
 
 

@@ -60,4 +60,4 @@ def test_plan_dxf_murs_en_traits(dossier):
     assert baies == [("F1", "S", 1.2, 0.9), ("F2", "E", 1.0, 1.0), ("PF1", "S", 2.0, 0.0)]
     assert abs(v(e["hypotheses"]["Uw"]) - (1.62 * 1.2 + 1.25 * 1.2 + 4.3 * 1.4) / 7.17) < 0.01
     assert all(c["statut"] == "ok" for c in e["controles"])
-    assert len(e["fichiers"]["non_lus"]) == 2 and any(a.startswith("Fichier non lu : plan.dwg") for a in e["alertes"])
+    assert len(e["fichiers"]["non_lus"]) == 2 and any("DWG non lus" in a and "plan.dwg" in a for a in e["alertes"])

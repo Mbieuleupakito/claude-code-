@@ -195,7 +195,9 @@ class _Lecteur:
         for r in lignes[1:]:
             nom = r[0]
             if _sa(nom).startswith("total"):
-                P["total_W_K"] = self.lu(_nb(r[-1]), src, "W/K")
+                tot = next((_nb(c) for c in reversed(r[1:]) if _nb(c) is not None), None)
+                if tot is not None:  # « Total | | » sans valeur : on recalcule plus bas
+                    P["total_W_K"] = self.lu(tot, src, "W/K")
                 continue
             psi, L, pl = (_nb(r[1]), _nb(r[2]) if len(r) > 2 else None, _nb(r[3]) if len(r) > 3 else None)
             if psi is None:

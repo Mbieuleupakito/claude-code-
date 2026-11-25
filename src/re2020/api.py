@@ -204,6 +204,16 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
             if msg.startswith("ZONE_A_SAISIR : "):
                 raise HTTPException(422, {"code": "zone_a_saisir", "message": msg.removeprefix("ZONE_A_SAISIR : ")})
             raise HTTPException(422, f"Dossier non exploitable : {msg}")
+        except Exception as exc:  # panne imprévue : message lisible + trace dans etudes/erreurs.log (à m'envoyer)
+            import traceback
+
+            trace = traceback.format_exc()
+            with open(racine / "erreurs.log", "a", encoding="utf-8") as f:
+                f.write(f"\n===== {datetime.now().isoformat(timespec='seconds')} étude {i} ({noms})\n{trace}")
+            db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "erreur", f"{type(exc).__name__}: {exc}", None))
+            db.commit()
+            raise HTTPException(500, f"Erreur interne de l'outil ({type(exc).__name__} : {exc}). Le détail est dans "
+                                     f"etudes/erreurs.log : envoyer ce fichier pour correction.")
         (d / "etude.json").write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
         (d / "feuille_de_route.html").write_text(generer_html(e), encoding="utf-8")
         try:

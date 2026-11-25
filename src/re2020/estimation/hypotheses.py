@@ -161,7 +161,7 @@ def appliquer_dossier(e: Entrees, hyp: dict, plan: dict, dossier: dict, choix: d
                 hyp["U_toiture"] = val(round(e.U["toiture"], 3), "déduit", f"Up toiture + {m['designation']} (U {m['U']['valeur']})", "haute", "W/m².K")
     # ---- ponts thermiques : tableau de la notice
     P = dossier.get("ponts_thermiques", {})
-    if P.get("liaisons") and P.get("total_W_K"):
+    if P.get("liaisons") and (P.get("total_W_K") or {}).get("valeur"):
         e.ponts_W_K = P["total_W_K"]["valeur"]
         hyp["ponts_thermiques"] = [{"liaison": l["liaison"], "longueur_m": l["longueur_m"]["valeur"] if l.get("longueur_m") else 0,
                                     "psi": l["psi"]} for l in P["liaisons"]]

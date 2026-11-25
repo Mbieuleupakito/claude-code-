@@ -107,8 +107,11 @@ class _Lecteur:
             if k.startswith("usage"):
                 I["usage"] = self.lu(v, src)
             elif "zone climatique" in k:
-                if (m := re.search(r"\bH[123][a-d]?\b", v, re.I)):
-                    I["zone"] = self.lu(m.group(0)[:2].upper() + m.group(0)[2:].lower(), src)
+                # « H1c », « H1 c », « H1-c », « H3 » ; « H1 » seul est incomplet (on le déduira du lieu)
+                if (m := re.search(r"\bH\s?([123])\s?-?\s?([a-d])?\b", v, re.I)):
+                    z = f"H{m.group(1)}{(m.group(2) or '').lower()}"
+                    if z in ("H1a", "H1b", "H1c", "H2a", "H2b", "H2c", "H2d", "H3"):
+                        I["zone"] = self.lu(z, src)
                 if "altitude" in k and (m := re.search(r"(\d+)\s*m\b", v)):
                     I["altitude_m"] = self.lu(float(m.group(1)), src, "m", note="fictive" if "fictiv" in _sa(v) else None)
             elif k.startswith("altitude") and (m := re.search(r"(\d+)\s*m\b", v)):

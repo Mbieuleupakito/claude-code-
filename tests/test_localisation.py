@@ -67,3 +67,13 @@ def test_etude_sans_zone_ni_altitude_ni_date():
     assert "38420" in src["lieu"]["valeur"]
     assert src["altitude_m"]["tag"] == "supposé" and src["date_pc"]["tag"] == "supposé"
     assert any(a.startswith("Altitude non trouvée") for a in e["alertes"])
+
+
+def test_zone_ecrite_avec_espace_ou_incomplete():
+    from re2020.documents.lecture import _Lecteur
+
+    for texte, attendu in (("H1 c", "H1c"), ("H1-c", "H1c"), ("h2 D", "H2d"), ("H3", "H3"), ("H1", None)):
+        lect = _Lecteur()
+        lect._cle_valeur([["Zone climatique", texte]], "notice.pdf")
+        z = lect.d["infos"].get("zone")
+        assert (z["valeur"] if z else None) == attendu, texte

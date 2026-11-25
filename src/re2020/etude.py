@@ -15,7 +15,7 @@ from .localisation import candidats_saisie, localiser
 from .plans import extraire_plan
 from .plans.textes import famille, meme_repere, normaliser_niveau, sans_accents
 from .propositions import proposer
-from .seuils import seuils_energie, zone_normalisee
+from .seuils import ZONES, seuils_energie, zone_normalisee
 from .trace import val
 
 
@@ -240,8 +240,17 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
                       catalogue_acv: CatalogueACV | None = None, dossier: dict | None = None) -> dict:
     cat = catalogue or Catalogue()
     dossier = dossier or {}
-    inf = dossier.get("infos", {})
+    inf = dict(dossier.get("infos", {}))
     alertes_lieu = []
+    if inf.get("zone") and inf["zone"]["valeur"] not in ZONES:  # zone incomplète (« H1 ») : on la déduit du lieu
+        alertes_lieu.append(f"Zone climatique lue incomplète (« {inf['zone']['valeur']} ») : déduite du lieu du projet.")
+        inf.pop("zone")
+    if p.zone not in (None, ""):
+        try:
+            zone_normalisee(p.zone)
+        except ValueError:
+            alertes_lieu.append(f"Zone saisie « {p.zone} » incomplète : déduite du lieu du projet.")
+            p.zone = None
     lieu = {}
     if p.commune:
         saisie = candidats_saisie(p.commune)

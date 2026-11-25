@@ -130,7 +130,12 @@ def test_plusieurs_pdf_sans_saisie(client, tmp_path, plan_pdf):
     e = client.get(j["liens"]["etude"]).json()
     assert e["parametres_sources"]["date_pc"]["tag"] == "lu"
     sans = client.post("/api/etudes", files={"fichiers": ("plan.pdf", plan_pdf, "application/pdf")}, data={})
-    assert sans.status_code == 422 and "Zone climatique" in sans.json()["detail"]
+    d = sans.json()["detail"]
+    assert sans.status_code == 422 and d["code"] == "zone_a_saisir" and "caractères de texte" in d["message"]
+    avec = client.post("/api/etudes", files={"fichiers": ("plan.pdf", plan_pdf, "application/pdf")}, data={"commune": "38420"})
+    assert avec.status_code == 200 and avec.json()["zone"] == "H1c"
+    inconnue = client.post("/api/etudes", files={"fichiers": ("plan.pdf", plan_pdf, "application/pdf")}, data={"commune": "Xyzville"})
+    assert inconnue.status_code == 422 and "non reconnue" in inconnue.json()["detail"]
 
 
 def test_version(client):

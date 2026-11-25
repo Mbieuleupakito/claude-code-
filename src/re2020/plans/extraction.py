@@ -22,6 +22,7 @@ from pathlib import Path
 import pdfplumber
 from shapely.geometry import Point
 
+from .. import ocr
 from ..trace import val
 from . import nord as nord_mod
 from .echelle import consensus, ratios_lignes_de_cote
@@ -29,6 +30,8 @@ from .murs import (analyser_facades, couleur, couleur_hachures, couleur_murs, fo
                    vues_en_plan)
 from .textes import (EtiquetteBaie, correspond, lire_dimensions_types, lire_echelles, lire_etiquettes_baies, lire_hauteurs,
                      lire_legende, lire_niveaux, lire_nord_texte, lire_pieces, m_par_pt, phrases_de_page, valeurs_metriques)
+
+RE_VIDE = re.compile(r"\bvide\s+sur\b|\bdouble\s+hauteur\b", re.I)
 
 MANQUANTS = ["hauteurs d'étage et HSP (coupe)", "compositions murs / plancher bas / toiture (notice, CCTP)",
              "menuiseries : Uw, Sw, TLw, occultations", "type de toiture (combles perdus / rampants / terrasse)",
@@ -62,12 +65,40 @@ def extraire_plan(chemin, page: int | None = None, hsp_m: float | None = None, d
                     continue
                 r["_fichier"] = ic
                 resultats.append(r)
+    resultats = _echelle_par_fichier(resultats, chemins, angle_nord_deg) if denominateur is None else resultats
     if not resultats:
         raise ValueError(echecs[0] if len(echecs) == 1 else
                          "Aucun plan de niveau reconnu dans le dossier (murs non remplis ?). Demander un PDF avec murs "
                          "en aplat, ou un DXF.")
     titres = [r for r in resultats if any(n["niveau"]["tag"] == "lu" for n in r["niveaux"])]
     return _fusionner(titres or resultats, "\n".join(textes), hsp_m, [c.name for c in chemins])
+
+
+def _echelle_par_fichier(resultats: list[dict], chemins: list[Path], angle_nord_deg) -> list[dict]:
+    """Les pages d'un même fichier calées sur les surfaces de pièces partagent la même échelle de dessin. Une pièce
+    non étiquetée (vide sur séjour, trémie, placard) ne fait que SOUS-estimer l'échelle : on retient la plus grande
+    et on relit les autres pages à cette échelle."""
+    out = []
+    for ic, ch in enumerate(chemins):
+        rs = [r for r in resultats if r["_fichier"] == ic]
+        cal = [r for r in rs if "pièces" in r["echelle"]["denominateur"]["source"]]
+        if len(cal) < 2:
+            out += rs
+            continue
+        d = max(r["echelle"]["denominateur"]["valeur"] for r in cal)
+        src = (f"calée sur les surfaces de pièces écrites, commune aux {len(cal)} plans du fichier "
+               "(la page la plus cohérente fixe l'échelle)")
+        with pdfplumber.open(ch) as pdf:
+            for r in rs:
+                if r in cal and abs(r["echelle"]["denominateur"]["valeur"] - d) / d > 0.02:
+                    try:
+                        r2 = _Extraction(pdf.pages[r["page"]], None, angle_nord_deg, (d, src)).run(ch.name, r["page"])
+                        r2["_fichier"] = ic
+                        r = r2
+                    except ValueError:
+                        pass
+                out.append(r)
+    return out
 
 
 def _fusionner(resultats: list[dict], texte: str, hsp_force: float | None, noms: list[str]) -> dict:
@@ -117,9 +148,10 @@ def _fusionner(resultats: list[dict], texte: str, hsp_force: float | None, noms:
 
 
 class _Extraction:
-    def __init__(self, page, denominateur, angle_nord_deg):
+    def __init__(self, page, denominateur, angle_nord_deg, echelle_commune=None):
         self.p = page
         self.denominateur_force = denominateur
+        self.echelle_commune = echelle_commune  # (D, source) : échelle déduite des autres pages du même fichier
         self.angle_force = angle_nord_deg
         self.alertes: list[str] = []
 
@@ -157,11 +189,39 @@ class _Extraction:
         return out, libres
 
     # ------------------------------------------------------------------ échelle
+    def _calage_pieces(self):
+        """Échelle déduite des surfaces de pièces écrites (« SÉJOUR 80 m² ») : on cherche une échelle où les murs
+        sont reconnus, puis on ajuste pour que la surface intérieure mesurée ≈ somme des pièces / 0,95
+        (cloisons et trémies). Retourne (m/pt, nb de pièces) ou None."""
+        pieces = lire_pieces(self.phrases)
+        if len(pieces) < 2:
+            return None
+        estimations = []
+        for D in (20, 25, 33, 50, 75, 100, 125, 150, 200, 250, 500):
+            k = m_par_pt(D)
+            for v in self._geometrie(k):
+                dedans = [pc for pc in pieces if v.enveloppe.contains(Point(pc["x"], pc["y"]))]
+                if len(dedans) < 2 or v.interieur is None:
+                    continue
+                s_pieces = sum(pc["surface_m2"] for pc in dedans)
+                k_est = math.sqrt(s_pieces / 0.95 / v.interieur.area)
+                if abs(k_est - k) / k < 0.45:  # les murs sont reconnus à une échelle proche de celle estimée
+                    estimations.append((len(dedans), k_est))
+            if estimations:
+                break
+        if not estimations:
+            return None
+        n, k_est = max(estimations)
+        return k_est, n
+
     def _echelle(self):
         mentions = lire_echelles(self.phrases)
         if self.denominateur_force:
             d = self.denominateur_force
             return m_par_pt(d), val(d, "lu", "fourni par l'utilisateur", "haute"), True
+        if self.echelle_commune:
+            d, src = self.echelle_commune
+            return m_par_pt(d), val(d, "déduit", src, "moyenne"), True
         k_mention, d = None, None
         if mentions:
             denoms = Counter(x for x, _ in mentions)
@@ -198,6 +258,16 @@ class _Extraction:
                 self.alertes.append(f"Échelle : la mention dit 1:{d} mais {n} cote(s) écrite(s) donnent 1:{d_cal} "
                                     "(PDF réduit à l'impression ?) → cotes retenues.")
             return k_cal, val(d_cal, "déduit", f"calibrée sur {n} cote(s) écrite(s) ({src_cotes})", "haute" if n >= 3 else "moyenne"), k_mention is None or abs(k_cal - k0) / k0 < 0.01
+        cal = self._calage_pieces()
+        if cal:
+            k_p, n_p = cal
+            d_p = round(k_p / m_par_pt(1))
+            if k_mention and abs(k_p - k_mention) / k_mention <= 0.10:
+                return k_mention, val(d, "lu", f"mention « Ech 1:{d} », cohérente avec {n_p} surfaces de pièces écrites", "haute"), True
+            if k_mention:
+                self.alertes.append(f"Échelle : la mention dit 1:{d} mais les surfaces des {n_p} pièces écrites donnent ≈ 1:{d_p} "
+                                    "(plan réduit à l'impression ?) → échelle des pièces retenue, à vérifier sur une cote.")
+            return k_p, val(d_p, "déduit", f"calée sur {n_p} surfaces de pièces écrites (± 5 %)", "moyenne"), True
         if k_mention:
             self.alertes.append("Échelle non vérifiée par une cote écrite : contrôler une dimension connue.")
             return k_mention, val(d, "lu", f"mention « Ech 1:{d} » (aucune cote pour la vérifier)", "moyenne"), True
@@ -229,6 +299,12 @@ class _Extraction:
     def run(self, nom_source, num_page):
         self.phrases = phrases_de_page(self.p)
         self.texte = self.p.extract_text() or ""
+        # texte dessiné en traits (SHX, cartouche aplati) : OCR local, ajouté aux phrases et au texte de la page
+        self.ocr = ocr.textes_page(self.p)
+        if self.ocr:
+            from .textes import Phrase
+            self.phrases += [Phrase(t, x0, top, x1, bottom, "ltr") for (t, x0, top, x1, bottom, _) in self.ocr]
+            self.texte += "\n" + "\n".join(t for t, *_ in self.ocr)
         self.etiquettes = lire_etiquettes_baies(self.phrases)
         self.formes = formes_remplies(self.p)
         if not self.formes:
@@ -392,7 +468,15 @@ class _Extraction:
         s_int = v.interieur.area * k * k if v.interieur is not None else 0.0
         p_int = v.interieur.length * k if v.interieur is not None else 0.0
         pcs = [pc for pc in pieces if v.enveloppe.contains(Point(pc["x"], pc["y"]))]
+        # « Vide sur séjour » : la partie non étiquetée de l'étage est un vide (double hauteur), pas du plancher
+        vide = None
+        if any(RE_VIDE.search(ph.texte) and v.enveloppe.contains(Point(ph.cx, ph.cy)) for ph in self.phrases) and pcs:
+            s_v = s_int - sum(pc["surface_m2"] for pc in pcs) / 0.95
+            if s_v > 2:
+                vide = val(round(s_v, 1), "déduit", "« vide sur… » écrit : surface intérieure − pièces étiquetées / 0,95",
+                           "faible", "m²")
         return {
+            "surface_vide_m2": vide,
             "niveau": niveau,
             "forme": val("rectangulaire" if n == 4 else f"polygonale ({n} façades)", "déduit", "contour des murs", "haute"),
             "emprise_m": {"largeur": val(round((x1 - x0) * k, 2), "déduit", "boîte englobante des murs", "haute", "m"),
@@ -457,11 +541,11 @@ def batiment(niv, hsp_v: dict, h_etage_v: dict | None = None) -> dict:
         "menuiserie_linteau_ml": val(round(larg, 1), D, "Σ largeurs des baies", "haute", "m", liaison="menuiserie / mur : linteau"),
         "menuiserie_tableaux_ml": val(round(2 * haut, 1), D, "Σ 2 x hauteurs des baies", "haute", "m", liaison="menuiserie / mur : tableaux"),
     }
-    s_int = sum(n["surface_interieure_m2"]["valeur"] for n in niv)
+    s_int = sum(n["surface_interieure_m2"]["valeur"] - ((n.get("surface_vide_m2") or {}).get("valeur") or 0) for n in niv)
     out = {
         "nombre_niveaux": val(nb, D, "vues en plan détectées", "haute"),
         "hauteur_sous_plafond_m": hsp_v,
-        "surface_interieure_totale_m2": val(round(s_int, 1), D, "Σ surfaces intérieures", "moyenne", "m²",
+        "surface_interieure_totale_m2": val(round(s_int, 1), D, "Σ surfaces intérieures (vides de double hauteur retirés)", "moyenne", "m²",
                                             note="proche de la Sref ; retirer trémie et parties < 1,80 m si besoin"),
         "surface_pieces_etiquetees_totale_m2": val(round(sum(n["surface_pieces_etiquetees_m2"]["valeur"] for n in niv), 1),
                                                    "lu", "Σ étiquettes de pièces", "haute", "m²"),

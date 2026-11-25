@@ -216,7 +216,12 @@ async function lire<T>(url: string, init?: RequestInit): Promise<T> {
   } catch {
     corps = null;
   }
-  if (!r.ok) throw new Error(corps?.detail ?? `Erreur ${r.status}`);
+  if (!r.ok) {
+    const d = corps?.detail;
+    const e = new Error(typeof d === "string" ? d : d?.message ?? `Erreur ${r.status}`) as Error & { code?: string };
+    if (d && typeof d === "object") e.code = d.code;
+    throw e;
+  }
   return corps as T;
 }
 

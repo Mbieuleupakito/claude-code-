@@ -77,7 +77,8 @@ def _brut(e: Entrees, k_cal: float) -> dict:
     H = dep["total"]
     Q = k_cal * H * climat.DT_MOYEN_H1B * climat.HEURES_CHAUFFE * climat.rigueur(e.zone, e.altitude_m) / 1000
     gi = climat.APPORTS_INTERNES_W_M2 * e.sref * climat.HEURES_CHAUFFE / 1000
-    gs = sum(a * e.Sw * FS_BAIES * climat.IRRADIATION[o] * climat.SOLEIL[e.zone] for o, a in e.baies.items())
+    i_moy = sum(climat.IRRADIATION.values()) / len(climat.IRRADIATION)  # orientation inconnue (nord non lu)
+    gs = sum(a * e.Sw * FS_BAIES * climat.IRRADIATION.get(o, i_moy) * climat.SOLEIL[e.zone] for o, a in e.baies.items())
     G = gi + gs
     tau = INERTIE_KJ_K_M2 * e.sref / 3.6 / H
     eta = _eta(G / Q, tau) if Q > 0 else 0.0

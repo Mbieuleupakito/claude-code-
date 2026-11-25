@@ -72,25 +72,43 @@ def phrases_de_page(page, ecart_max: float = 4.0) -> list[Phrase]:
             return (s, w["x0"], -w["bottom"])
         return (s, w["x0"], w["top"])
 
-    items.sort(key=cle)
     phrases: list[Phrase] = []
-    for w, s in items:
-        if phrases:
+    # texte horizontal : chaque mot (de gauche à droite) rejoint la phrase de la même ligne qui finit juste avant lui
+    horiz = sorted((it for it in items if it[1] == "ltr"), key=lambda it: (it[0]["x0"], it[0]["top"]))
+    ouvertes: list[Phrase] = []
+    for w, s_ in horiz:
+        h = w["bottom"] - w["top"]
+        ec = max(ecart_max, 0.6 * h)
+        cible = None
+        for p in ouvertes:
+            if abs(w["top"] - p.top) < max(1.5, 0.15 * h) and -1 < w["x0"] - p.x1 < ec:
+                cible = p
+                break
+        if cible:
+            cible.texte += " " + w["text"]
+            cible.x0, cible.top = min(cible.x0, w["x0"]), min(cible.top, w["top"])
+            cible.x1, cible.bottom = max(cible.x1, w["x1"]), max(cible.bottom, w["bottom"])
+        else:
+            p = Phrase(w["text"], w["x0"], w["top"], w["x1"], w["bottom"], "ltr")
+            ouvertes.append(p)
+            phrases.append(p)
+        ouvertes = [p for p in ouvertes if w["x0"] - p.x1 < 60]  # les phrases loin derrière sont closes
+    # texte vertical
+    vert = sorted((it for it in items if it[1] != "ltr"), key=cle)
+    for w, s_ in vert:
+        if phrases and phrases[-1].sens == s_:
             p = phrases[-1]
-            if p.sens == s == "ltr":
-                meme = abs(w["top"] - p.top) < 1.5 and -1 < w["x0"] - p.x1 < ecart_max
-            elif p.sens == s == "btt":
-                meme = abs(w["x0"] - p.x0) < 1.5 and -1 < p.top - w["bottom"] < ecart_max
-            elif p.sens == s == "ttb":
-                meme = abs(w["x0"] - p.x0) < 1.5 and -1 < w["top"] - p.bottom < ecart_max
+            ec = max(ecart_max, 0.6 * (w["x1"] - w["x0"]))
+            if s_ == "btt":
+                meme = abs(w["x0"] - p.x0) < 1.5 and -1 < p.top - w["bottom"] < ec
             else:
-                meme = False
+                meme = abs(w["x0"] - p.x0) < 1.5 and -1 < w["top"] - p.bottom < ec
             if meme:
                 p.texte += " " + w["text"]
                 p.x0, p.top = min(p.x0, w["x0"]), min(p.top, w["top"])
                 p.x1, p.bottom = max(p.x1, w["x1"]), max(p.bottom, w["bottom"])
                 continue
-        phrases.append(Phrase(w["text"], w["x0"], w["top"], w["x1"], w["bottom"], s))
+        phrases.append(Phrase(w["text"], w["x0"], w["top"], w["x1"], w["bottom"], s_))
     return phrases
 
 
@@ -147,10 +165,14 @@ def normaliser_niveau(txt: str) -> str:
     return t
 
 
+RE_PAS_TITRE = re.compile(r"\b(vide|tr[ée]mie|vers|depuis|acc[eè]s|monte|descend|niveau\s+fini)\b", re.I)
+
+
 def lire_niveaux(phrases: list[Phrase]) -> list[tuple[str, Phrase]]:
+    """Titres de vue (« PLAN RDC », « R+1 »…). « Vide sur RDC » ou « vers R+1 » ne sont pas des titres."""
     out = []
     for p in phrases:
-        if p.sens == "ltr":
+        if p.sens == "ltr" and not RE_PAS_TITRE.search(p.texte):
             m = RE_NIVEAU.search(p.texte)
             if m:
                 out.append((normaliser_niveau(m.group(1)), p))
@@ -216,15 +238,22 @@ def lire_etiquettes_baies(phrases: list[Phrase]) -> list[EtiquetteBaie]:
 
 
 def lire_pieces(phrases: list[Phrase]) -> list[dict]:
-    """Pièces étiquetées « Nom / 12.3 m² »."""
+    """Pièces étiquetées « Nom / 12.3 m² » : la surface peut partager sa phrase avec d'autres mots (« Dgt 12 m2 »)."""
     out = []
     for p in phrases:
-        m = RE_SURFACE.match(p.texte.strip())
-        if not m:
-            continue
-        h = max(p.hauteur_ligne, 3.0)
-        nom = _voisine(p, phrases, -2.6 * h, -0.4 * h, 30, lambda q: not RE_SURFACE.match(q.texte) and not RE_DIMS.search(q.texte))
-        out.append({"nom": nom.texte if nom else None, "surface_m2": float(m.group(1).replace(",", ".")), "x": p.cx, "y": p.cy})
+        for m in re.finditer(r"(?<![\d.,])(\d{1,3}(?:[.,]\d{1,2})?)\s*m[²2](?![\w³])", p.texte):
+            s = float(m.group(1).replace(",", "."))
+            if not 0.5 <= s <= 300:
+                continue
+            avant = p.texte[: m.start()].strip()
+            nom = avant if re.search(r"[A-Za-zÀ-ÿ]{2,}", avant) and not RE_SURFACE.search(avant) else None
+            if nom is None:
+                h = max(p.hauteur_ligne, 3.0)
+                ph = _voisine(p, phrases, -2.6 * h, -0.4 * h, 30,
+                              lambda q: not re.search(r"\d\s*m[²2]", q.texte) and not RE_DIMS.search(q.texte)
+                              and re.search(r"[A-Za-zÀ-ÿ]{2,}", q.texte) is not None)
+                nom = ph.texte if ph else None
+            out.append({"nom": nom, "surface_m2": s, "x": p.cx, "y": p.cy})
     return out
 
 

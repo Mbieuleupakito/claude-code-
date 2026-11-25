@@ -27,6 +27,13 @@ def couleur(o):
     return (c,)
 
 
+def _vegetal(c) -> bool:
+    """Aplat nettement vert : arbres, haies, pelouses (jamais des murs)."""
+    nums = [v for v in c if isinstance(v, (int, float))]
+    # un vert presque noir (poché AutoCAD « 0,39,8 ») n'est pas de la végétation
+    return len(nums) == 3 and nums[1] >= 0.3 and nums[1] > nums[0] + 0.08 and nums[1] > nums[2] + 0.08
+
+
 def _clair(c) -> bool:
     nums = [v for v in c if isinstance(v, (int, float))]
     if not nums:
@@ -133,13 +140,33 @@ def epaisseur_moyenne(pg: Polygon) -> float:
 
 def murs(formes, k, ep_min=0.04, ep_max=0.8, long_min=0.4) -> list[Polygon]:
     """Formes dont l'épaisseur moyenne est celle d'un mur (en m, via k = m/pt)."""
-    out = []
-    for pg, _ in formes:
+    # aplats d'une même couleur qui se touchent = un seul mur (AutoCAD découpe souvent le poché en bandes fines)
+    par_couleur: dict = {}
+    for pg, c in formes:
+        if not _vegetal(c):  # arbres, haies, pelouses : jamais des murs (mais une baie peut être un aplat vert)
+            par_couleur.setdefault(c, []).append(pg)
+    fusionnes = []
+    for c, pgs in par_couleur.items():
+        if len(pgs) > 1:
+            u = unary_union([g.buffer(0.3, join_style="mitre") for g in pgs]).buffer(-0.3, join_style="mitre")
+            fusionnes += [(g, c) for g in polygones(u)]
+        else:
+            fusionnes += [(pgs[0], c)]
+    cands = []
+    for pg, c in fusionnes:
         ep = epaisseur_moyenne(pg) * k
         x0, y0, x1, y1 = pg.bounds
         if ep_min <= ep <= ep_max and max(x1 - x0, y1 - y0) * k >= long_min:
-            out.append(pg)
-    return out
+            cands.append((pg, c))
+    # le poché des murs est la couleur dominante ; les couleurs marginales (flèches de coupe, repères NGF,
+    # symboles) sont écartées. Plusieurs matériaux de murs de couleurs différentes restent acceptés.
+    aire: dict = {}
+    for pg, c in cands:
+        aire[c] = aire.get(c, 0.0) + pg.area
+    if not aire:
+        return []
+    maxi = max(aire.values())
+    return [pg for pg, c in cands if aire[c] >= 0.2 * maxi]
 
 
 def fermeture(geom, r):
@@ -211,16 +238,47 @@ def vues_en_plan(murs_pg, k, fermeture_m=1.6, part_min=0.15, surface_min_m2=9.0)
         gardes = gros + [g for g in membres if g.area < part_min * plus_grand and g.intersection(coque).area >= 0.8 * g.area]
         if not gardes:
             continue
-        ferme = fermeture(unary_union(gardes), r)
-        pgs = sorted(polygones(ferme), key=lambda g: g.area, reverse=True)
-        if not pgs:
+        env = _enveloppe(gardes, k, r)
+        if env is None:
             continue
-        env = Polygon(pgs[0].exterior).simplify(0.3)
-        if env.area * k * k < surface_min_m2:
-            continue
+        if env.area * k * k < surface_min_m2 or equerre(env) < 0.6:
+            continue  # trop petit, ou contour non orthogonal (arbre, talus, courbe de niveau)
         murs_vue = [m for m in murs_pg if m.intersects(env.buffer(0.5))]
         vues.append(Vue(murs=murs_vue, enveloppe=env, facades=_facades(env, k)))
     return vues
+
+
+def _enveloppe(gardes, k, r) -> Polygon | None:
+    """Contour extérieur des murs fermé par une fermeture morphologique. Une grande baie (coulissant de 4 m) laisse
+    le contour ouvert : on élargit alors la fermeture jusqu'à obtenir un anneau qui entoure les murs."""
+    u = unary_union(gardes)
+    premier = None
+    for f in (1.0, 1.5, 2.0, 2.5, 3.0):
+        pgs = sorted(polygones(fermeture(u, r * f)), key=lambda g: g.area, reverse=True)
+        if not pgs:
+            continue
+        env = Polygon(pgs[0].exterior).simplify(0.3)
+        premier = premier or env
+        # anneau fermé : l'enveloppe contient presque tous les murs et couvre l'essentiel de leur emprise
+        # (un contour resté ouvert ne garde qu'un « C » mince le long des murs)
+        if env.intersection(u).area >= 0.9 * u.area and env.area >= 0.5 * u.convex_hull.area:
+            return env
+    return premier
+
+
+def equerre(env: Polygon) -> float:
+    """Part du contour (en longueur) parallèle ou perpendiculaire à la direction principale du bâtiment."""
+    coords = list(env.exterior.coords)
+    segs = [(math.hypot(b[0] - a[0], b[1] - a[1]), math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 90)
+            for a, b in zip(coords, coords[1:]) if a != b]
+    if not segs:
+        return 0.0
+    total = sum(l for l, _ in segs)
+    meilleur = 0.0
+    for _, a0 in segs:
+        ok = sum(l for l, a in segs if min(abs(a - a0), 90 - abs(a - a0)) < 4)
+        meilleur = max(meilleur, ok / total)
+    return meilleur
 
 
 def _facades(env: Polygon, k, long_min_m=0.3) -> list[Facade]:
@@ -316,6 +374,11 @@ def analyser_facades(vue: Vue, hachures, k, ouverture_min_m=0.25):
         iv = fusion(iv)
         f.couverture = sum(b - a for a, b in iv) / f.longueur_pt
         gaps = [(a[1], b[0]) for a, b in zip(iv, iv[1:]) if (b[0] - a[1]) * k >= ouverture_min_m]
+        if f.couverture < 0.15 and f.longueur_pt * k >= 0.6:
+            # tronçon de façade presque sans mur (refermé par l'enveloppe) : grande baie vitrée ; seuls les bouts de
+            # mur des angles voisins sont retirés
+            bornes = [0.0] + [x for a, b in iv for x in (a, b)] + [f.longueur_pt]
+            gaps = [(a, b) for a, b in zip(bornes[::2], bornes[1::2]) if (b - a) * k >= ouverture_min_m]
         # bandes hachurées
         d1s, d0s, locs = [], [], []
         for h in hachures:

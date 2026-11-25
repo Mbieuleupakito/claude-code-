@@ -11,7 +11,7 @@ from .catalogues import Catalogue
 from .documents import lire_dossier
 from .estimation import entrees_depuis_plan, estimer
 from .formats import preparer
-from .localisation import localiser
+from .localisation import candidats_saisie, localiser
 from .plans import extraire_plan
 from .plans.textes import famille, meme_repere, normaliser_niveau, sans_accents
 from .propositions import proposer
@@ -25,6 +25,7 @@ class Parametres:
     altitude_m: float | None = None    # sinon lue dans la notice
     date_pc: str | None = None         # AAAA-MM-JJ (dépôt du permis) ; sinon lue dans la notice
     projet: str = "Projet sans nom"
+    commune: str | None = None         # « 38420 », « Domène », « Grenoble (38) » : sert à déduire zone et altitude
     sref: float | None = None          # sinon lue dans la notice, sinon surface intérieure du plan
     nb_logements: int = 1
     hsp_m: float | None = None         # sinon lue sur la coupe, sinon 2,50 supposé
@@ -51,11 +52,38 @@ def realiser_etude(fichiers, p: Parametres, catalogue: Catalogue | None = None,
                          + (" — " + " ; ".join(non_lus) if non_lus else ""))
     plan = extraire_plan(prep["plans"], hsp_m=p.hsp_m, denominateur=p.echelle, angle_nord_deg=p.angle_nord_deg)
     dossier = lire_dossier(prep["documents"])
+    dossier["_diagnostic"] = diagnostic(prep, plan)
     e = etude_depuis_plan(plan, p, catalogue, catalogue_acv, dossier)
     e["fichiers"] = {"plans": [f.name for f in prep["plans"]], "documents": [f.name for f in prep["documents"]],
                      "non_lus": non_lus}
     e["alertes"] = [f"Fichier non lu : {x}" for x in non_lus] + e["alertes"]
     return e
+
+
+def diagnostic(prep: dict, plan: dict) -> list[str]:
+    """Ce que l'outil a pu lire dans chaque fichier (pour expliquer un échec)."""
+    import pdfplumber
+
+    out = []
+    for f in prep["documents"]:
+        if f.suffix.lower() != ".pdf":
+            out.append(f"{f.name} : lu")
+            continue
+        try:
+            with pdfplumber.open(f) as pdf:
+                n_car = sum(len(p.chars) for p in pdf.pages)
+                n_pages = len(pdf.pages)
+                n_img = sum(len(p.images) for p in pdf.pages)
+        except Exception:
+            out.append(f"{f.name} : illisible")
+            continue
+        if n_car == 0:
+            out.append(f"{f.name} : {n_pages} page(s), AUCUN texte lisible" + (" (images ou scan)" if n_img else " (textes vectorisés en traits ?)"))
+        else:
+            out.append(f"{f.name} : {n_pages} page(s), {n_car} caractères de texte")
+    out += [f"{nom} : non lu ({raison})" for nom, raison in prep["non_lus"]]
+    out.append("plans de niveau reconnus : " + (", ".join(plan.get("pages_plans", [])) or "aucun"))
+    return out
 
 
 def _param(nom: str, fourni, lu: dict | None, libelle: str):
@@ -215,12 +243,21 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     inf = dossier.get("infos", {})
     alertes_lieu = []
     lieu = {}
-    if (p.zone in (None, "") and not inf.get("zone")) or (p.altitude_m is None and not inf.get("altitude_m")):
+    if p.commune:
+        saisie = candidats_saisie(p.commune)
+        if not saisie:
+            raise ValueError(f"Commune « {p.commune} » non reconnue : taper le code postal (ex. 38420) ou choisir la zone climatique.")
+        lieu = localiser(saisie)
+    elif (p.zone in (None, "") and not inf.get("zone")) or (p.altitude_m is None and not inf.get("altitude_m")):
         lieu = localiser(dossier.get("localisation_candidats", []))
         if lieu.get("note"):
             alertes_lieu.append("Localisation : " + lieu["note"])
-    zone_v, zone_t = _param("zone", p.zone, inf.get("zone") or lieu.get("zone"),
-                            "Zone climatique (ni zone, ni code postal, ni département trouvé)")
+    if p.zone in (None, "") and not (inf.get("zone") or lieu.get("zone")):
+        lus = dossier.get("_diagnostic", [])
+        raise ValueError("ZONE_A_SAISIR : le lieu du chantier n'a pas été trouvé dans le dossier (ni zone climatique, ni code "
+                         "postal, ni département). Taper la commune ou le code postal du chantier, ou choisir la zone."
+                         + (" Ce que l'outil a pu lire : " + " ; ".join(lus) if lus else ""))
+    zone_v, zone_t = _param("zone", p.zone, inf.get("zone") or lieu.get("zone"), "Zone climatique")
     alt_lu = inf.get("altitude_m") or lieu.get("altitude_m")
     if p.altitude_m is None and not alt_lu:
         alt_lu = val(100.0, "supposé", "altitude introuvable (hors ligne ou commune inconnue) : classe < 400 m supposée", "faible", "m")
@@ -229,8 +266,14 @@ def etude_depuis_plan(plan: dict, p: Parametres, catalogue: Catalogue | None = N
     alt_v, alt_t = _param("altitude", p.altitude_m, alt_lu, "Altitude")
     dpc_lu = inf.get("date_pc")
     if p.date_pc in (None, "") and not dpc_lu:
-        dpc_lu = val(date.today().isoformat(), "supposé", "date de dépôt du PC introuvable : date du jour supposée", "faible")
-        alertes_lieu.append("Date de dépôt du PC non trouvée : date du jour supposée (elle fixe les seuils : la saisir).")
+        dates = sorted(dossier.get("dates", []))
+        if dates:
+            d_plan, src_d = dates[-1]
+            dpc_lu = val(d_plan, "supposé", f"date de dépôt du PC introuvable : date la plus récente des plans ({src_d}) supposée", "faible")
+            alertes_lieu.append(f"Date de dépôt du PC non trouvée : date des plans ({d_plan}) supposée (elle fixe les seuils : la saisir).")
+        else:
+            dpc_lu = val(date.today().isoformat(), "supposé", "date de dépôt du PC introuvable : date du jour supposée", "faible")
+            alertes_lieu.append("Date de dépôt du PC non trouvée : date du jour supposée (elle fixe les seuils : la saisir).")
     dpc_v, dpc_t = _param("date_pc", p.date_pc, dpc_lu, "Date de dépôt du permis")
     zone = zone_normalisee(zone_v)
     controles = controles_croises(plan, dossier) if dossier else []

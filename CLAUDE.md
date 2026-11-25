@@ -32,9 +32,17 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
   rectangles ou polygones → vues → contour quelconque → façades, couche pleine, bandes hachurées ITE/ITI,
   ouvertures dans le mur ou l'isolant, angles, refends), `nord.py`, `extraction.py`, `controle.py`.
   CLI : `python -m re2020.plans plan.pdf --controle plan.png`.
+  Échelle : mention vérifiée par les cotes écrites ; à défaut, calée sur les surfaces de pièces écrites (« SÉJOUR 80 m² »),
+  commune à toutes les pages d'un même fichier (la plus grande : un vide non étiqueté ne fait que la sous-estimer).
+  Poché des murs = couleur dominante (flèches de coupe, repères NGF écartés) ; contour refermé même avec une baie de 4 m ;
+  tronçon de façade sans mur = grande baie ; « Vide sur RDC » retiré de la surface intérieure et ignoré comme titre.
+  OCR local (`src/re2020/ocr.py`, RapidOCR/ONNX, rien n'est envoyé) pour les textes dessinés en traits : cartouche
+  (adresse, titre « PLAN R+1 PROJET »), pages pauvres en texte seulement.
   Tests : plans synthétiques (rectangle ITE, L en ITI, dossier « peint » + notice) + Domène M01 + mini-projet bureaux
-  (`data/examples/mini_projet/`, 18 contrôles croisés concordants) ; Charleville en attente du PDF.
-  Limites : murs dessinés en aplat (pas seulement en traits), HSP non lue (coupe), pas de DXF.
+  (`data/examples/mini_projet/`, 18 contrôles croisés concordants) + Charleville (PDF client gitignoré : 2 niveaux,
+  1:63 retrouvé alors que 1:250 est écrit, plancher bas 130,6 m² vs 126,7 RSET, baie O double hauteur).
+  Limites : pas de nord sur les plans Charleville (à saisir) ; hauteurs des baies non étiquetées supposées → baies
+  +23 % (test xfail) : prochaine étape = lire les élévations (échelle fausse aussi, vantaux un par un) ; HSP non lue.
 - `src/re2020/documents/` (fait) : lecture de TOUT le dossier PDF (notice, tableaux, coupe…) : tableaux reconnus par
   leurs en-têtes (infos projet, parois Up, menuiseries Uw/g/TL, Ψ·L, baies + allèges, locaux, bilan façades, Sref),
   texte libre par section (ventilation, chauffage, ECS, éclairage, HSP). Valeurs « lu » avec page source. Remplacent
@@ -45,7 +53,9 @@ Périmètre actuel : RE2020 énergie + ACV, maison individuelle d'abord. Hors p�
 - `src/re2020/localisation.py` (fait) : lieu du projet (codes postaux, « Ville (38) », départements ; l'adresse du chantier
   est préférée à celles des intervenants) → zone climatique par département (tableau de l'arrêté, hors ligne) ; altitude
   en ligne (Base Adresse Nationale + altimétrie IGN) en n'envoyant que commune + code postal, désactivable
-  (RE2020_HORS_LIGNE=1) ; sinon < 400 m supposé. Date de PC absente → date du jour supposée + alerte.
+  (RE2020_HORS_LIGNE=1) ; sinon altitude lue sur les cotes NGF des plans, sinon < 400 m supposé. Champ « Adresse ou
+  commune du chantier » dans le formulaire (adresse complète acceptée, seule la commune part). Lieu introuvable →
+  erreur 422 `zone_a_saisir` et le champ est mis en avant. Date de PC absente → date des plans, sinon du jour + alerte.
 - `src/re2020/catalogues/` (fait) : JSON de `data/catalogues` → SQLite ; U multicouche (± 3 % des Up Pléiades),
   recherche par type de paroi / U cible / matériau, épaisseur pour un U cible, λ +15 % si non certifié, Ψ ITE/ITI.
 - `src/re2020/estimation/` (fait) : modèle saisonnier calé sur le RSET Charleville (`data/references/charleville_calage.json`),

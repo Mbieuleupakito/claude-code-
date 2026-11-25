@@ -14,6 +14,8 @@ export default function NouvelleEtude() {
   const [survol, setSurvol] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [lieuASaisir, setLieuASaisir] = useState(false);
+  const champCommune = useRef<HTMLInputElement>(null);
   const entreeFichier = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,6 +49,10 @@ export default function NouvelleEtude() {
     } catch (e: any) {
       setErreur(e.message);
       setEnvoi(false);
+      if (e.code === "zone_a_saisir") {
+        setLieuASaisir(true);
+        setTimeout(() => { champCommune.current?.scrollIntoView({ behavior: "smooth", block: "center" }); champCommune.current?.focus(); }, 50);
+      }
     }
   }
 
@@ -91,6 +97,13 @@ export default function NouvelleEtude() {
             <div className="champ" style={{ gridColumn: "1 / -1" }}>
               <label htmlFor="projet">Nom du projet</label>
               <input id="projet" name="projet" className="entree" placeholder="Maison Dupont, lot 3" />
+            </div>
+            <div className="champ" style={{ gridColumn: "1 / -1" }}>
+              <label htmlFor="commune">Adresse ou commune du chantier</label>
+              <input id="commune" name="commune" ref={champCommune} className="entree" placeholder="ex. 3 chemin du Haut du Theux, 08000 Charleville-Mézières (lu dans le dossier si vide)"
+                style={lieuASaisir ? { borderColor: "var(--critique)", boxShadow: "0 0 0 3px rgba(192,48,47,0.15)" } : undefined}
+                onChange={() => setLieuASaisir(false)} />
+              <span className="aide">Sert à déduire la zone climatique et l'altitude. Seuls la commune et le code postal sont envoyés aux services publics (BAN, IGN), jamais l'adresse complète</span>
             </div>
             <div className="champ">
               <label htmlFor="zone">Zone climatique</label>
@@ -176,7 +189,14 @@ export default function NouvelleEtude() {
           </details>
         </section>
 
-        {erreur ? <div className="message erreur"><AlertCircle strokeWidth={1.5} />{erreur}</div> : null}
+        {erreur ? (
+          <div className="message erreur"><AlertCircle strokeWidth={1.5} />
+            <div>
+              {lieuASaisir ? <strong style={{ display: "block", marginBottom: 4 }}>Il manque le lieu du chantier : tapez l'adresse, la commune ou le code postal ci-dessus (vos fichiers sont gardés), puis relancez.</strong> : null}
+              {erreur}
+            </div>
+          </div>
+        ) : null}
         {envoi ? <div className="message info"><Loader2 strokeWidth={1.5} />Lecture du dossier, estimation et ACV en cours</div> : null}
 
         <div style={{ display: "flex", gap: 8 }}>

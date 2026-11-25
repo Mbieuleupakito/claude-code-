@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pdfplumber
 
+from .. import ocr
 from ..catalogues.db import type_paroi
 from ..localisation import candidats as candidats_lieu
 from ..plans.textes import lire_hauteurs
@@ -47,7 +48,7 @@ class _Lecteur:
         self.d: dict = {"infos": {}, "parois": [], "menuiseries": [], "ponts_thermiques": {"liaisons": []},
                         "baies": [], "locaux": [], "bilan_facades": [], "surfaces": {}, "ventilation": {},
                         "chauffage": {}, "ecs": {}, "eclairage": {}, "hauteurs": {}, "pages_lues": [],
-                        "localisation_candidats": []}
+                        "localisation_candidats": [], "cotes_ngf": [], "dates": []}
 
     def lu(self, valeur, source, unite=None, conf="haute", **extra):
         return val(valeur, "lu", source, conf, unite, **extra)
@@ -292,6 +293,13 @@ class _Lecteur:
             m = re.search(r"production locale[^:]*:\s*([^.(]+)", t, re.I)
             if m:
                 self.d["infos"]["production_locale"] = self.lu(m.group(1).strip(), src)
+        for m in re.finditer(r"\b(\d{2})/(\d{2})/(20\d{2})\b", t):
+            if 1 <= int(m.group(2)) <= 12 and 1 <= int(m.group(1)) <= 31:
+                self.d["dates"].append((f"{m.group(3)}-{m.group(2)}-{m.group(1)}", src))
+        for m in re.finditer(r"NGF\s*:?\s*\+?\s*(\d{1,4}[.,]\d{1,3})", t):
+            z = float(m.group(1).replace(",", "."))
+            if -10 < z < 4800:
+                self.d["cotes_ngf"].append((z, src))
         h = lire_hauteurs(t)
         for k, v in h.items():
             self.d["hauteurs"].setdefault(k, self.lu(v, src, "m"))
@@ -303,7 +311,13 @@ def _lire_pdf(lect: _Lecteur, ch: Path):
         # la notice (données du projet) passe avant les autres pages (exercices, annexes) qui pourraient la contredire
         pages.sort(key=lambda x: (0 if re.search(r"notice|cctp|descriptif", x[2], re.I) else 1, x[0]))
         for i, p, txt in pages:
-            _lire_bloc(lect, f"{ch.name} p.{i + 1}", p.extract_tables(), txt)
+            src = f"{ch.name} p.{i + 1}"
+            _lire_bloc(lect, src, p.extract_tables(), txt)
+            # cartouche / titres dessinés en traits : OCR local, case par case (chantier, architecte, maître d'ouvrage…)
+            for bloc in ocr.blocs(ocr.textes_page(p)):
+                lect.d["localisation_candidats"] += candidats_lieu(bloc.replace("\n", " · "), src + " (OCR)", 1.2)
+                for m in re.finditer(r"\b(\d{2})/(\d{2})/(20\d{2})\b", bloc):
+                    lect.d["dates"].append((f"{m.group(3)}-{m.group(2)}-{m.group(1)}", src + " (OCR)"))
 
 
 def _lire_bloc(lect: _Lecteur, src: str, tableaux: list, txt: str):
@@ -377,6 +391,18 @@ def lire_dossier(chemins) -> dict:
         if lecteur:
             lecteur(lect, ch)
     d = lect.d
+    # altitude du terrain : cotes NGF des plans (« NGF: +161,00 ») → groupe le plus bas, valeur la plus fréquente
+    if d["cotes_ngf"] and "altitude_m" not in d["infos"]:
+        zs = [z for z, _ in d["cotes_ngf"]]
+        bas = [z for z in zs if z <= min(zs) + 1.0]
+        compte: dict[float, int] = {}
+        for z in bas:
+            compte[round(z, 1)] = compte.get(round(z, 1), 0) + 1
+        z0 = max(compte, key=lambda z: (compte[z], -z))
+        srcs = sorted({src for z, src in d["cotes_ngf"] if round(z, 1) == z0})
+        d["infos"]["altitude_m"] = val(round(z0), "lu", f"cote NGF du rez-de-chaussée (+{z0:.2f} m) lue sur {', '.join(srcs[:3])}",
+                                       "haute" if compte[z0] >= 2 else "moyenne", "m",
+                                       note=f"{len(zs)} cotes NGF lues ; altitude du terrain ≈ niveau du rez-de-chaussée")
     # usage : résidentiel ou tertiaire
     u = _sa(d["infos"].get("usage", {}).get("valeur"))
     if u:

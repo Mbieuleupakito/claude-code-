@@ -165,7 +165,8 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
                           nb_logements: int = Form(1), hsp_m: float | None = Form(None), systeme: str | None = Form(None),
                           mb_hsp: float | None = Form(None), mc_hsp: float | None = Form(None),
                           echelle: int | None = Form(None), angle_nord_deg: float | None = Form(None),
-                          structure: str | None = Form(None), plancher: str | None = Form(None), menuiserie: str | None = Form(None)):
+                          structure: str | None = Form(None), plancher: str | None = Form(None), menuiserie: str | None = Form(None),
+                          commune: str | None = Form(None)):
         envois = [f for f in ([fichier] if fichier else []) + list(fichiers) if f is not None]
         if not envois:
             raise HTTPException(422, "Ajouter au moins un PDF (plans, notice thermique…).")
@@ -191,7 +192,7 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
         p = Parametres(zone=zone or None, altitude_m=altitude_m, date_pc=date_pc or None, projet=projet, sref=sref or None,
                        nb_logements=nb_logements, hsp_m=hsp_m or None, systeme=systeme or None, mb_hsp=mb_hsp, mc_hsp=mc_hsp,
                        echelle=echelle or None, angle_nord_deg=angle_nord_deg, structure=structure or None,
-                       plancher=plancher or None, menuiserie=menuiserie or None)
+                       plancher=plancher or None, menuiserie=menuiserie or None, commune=(commune or "").strip() or None)
         noms = " + ".join(n for n, _ in contenus)
         ligne = [i, datetime.now().isoformat(timespec="seconds"), projet, noms, json.dumps(p.__dict__)]
         try:
@@ -199,7 +200,10 @@ def creer_app(dossier: str | Path | None = None, mot_de_passe: str | None = None
         except (ValueError, KeyError) as exc:
             db.execute("INSERT INTO etudes VALUES (?,?,?,?,?,?,?,?)", (*ligne, "erreur", str(exc), None))
             db.commit()
-            raise HTTPException(422, f"Dossier non exploitable : {exc}")
+            msg = str(exc)
+            if msg.startswith("ZONE_A_SAISIR : "):
+                raise HTTPException(422, {"code": "zone_a_saisir", "message": msg.removeprefix("ZONE_A_SAISIR : ")})
+            raise HTTPException(422, f"Dossier non exploitable : {msg}")
         (d / "etude.json").write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
         (d / "feuille_de_route.html").write_text(generer_html(e), encoding="utf-8")
         try:

@@ -91,7 +91,9 @@ def candidats(texte: str, source: str, poids: float = 1.0) -> list[dict]:
                 out.append({"departement": m.group(2), "code_postal": None, "commune": m.group(1).strip().title(),
                             "score": score + 0.5, "source": source, "extrait": ligne.strip()[:120]})
         for nom, code in NOMS_DEPARTEMENTS:
-            if re.search(rf"\b{re.escape(nom)}\b", l_sa) and not re.search(r"\b(?:rue|avenue|boulevard|chemin|route|place) ", l_sa):
+            # noms courts ou courants (Lot, Ain, Var, Nord, Cher…) : seulement avec « département du … »
+            motif = rf"\b{re.escape(nom)}\b" if len(nom) >= 8 or "-" in nom else rf"\bdepartement (?:du |de la |de l'|de |des )?{re.escape(nom)}\b"
+            if re.search(motif, l_sa) and not re.search(r"\b(?:rue|avenue|boulevard|chemin|route|place) ", l_sa):
                 out.append({"departement": code, "code_postal": None, "commune": None, "score": score - 0.5,
                             "source": source, "extrait": ligne.strip()[:120]})
                 break
@@ -184,3 +186,38 @@ def localiser(cands: list[dict]) -> dict:
         out["altitude_m"] = val(alt["altitude_m"], "déduit", f"{alt['source']} : {alt['commune']}", "moyenne", "m",
                                 note="altitude au centre de la commune : vérifier celle du terrain si la commune est vallonnée")
     return out
+
+
+@lru_cache(maxsize=256)
+def _geocoder_commune(nom: str) -> dict | None:
+    """Commune seule (sans code postal) → code postal, via la Base Adresse Nationale (en ligne)."""
+    if os.environ.get("RE2020_HORS_LIGNE") == "1":
+        return None
+    q = urllib.parse.urlencode({"q": nom, "type": "municipality", "limit": 1})
+    for base in ("https://data.geopf.fr/geocodage/search", "https://api-adresse.data.gouv.fr/search/"):
+        try:
+            r = _get_json(f"{base}?{q}")
+            if r.get("features"):
+                p = r["features"][0]["properties"]
+                return {"code_postal": p.get("postcode"), "commune": p.get("city") or p.get("name")}
+        except Exception:
+            continue
+    return None
+
+
+def candidats_saisie(texte: str) -> list[dict]:
+    """Ce que le thermicien tape dans « Commune ou code postal » : « 38420 », « 38420 Domène », « Domène (38) »,
+    « Isère », ou « Domène » seul (recherché en ligne)."""
+    t = texte.strip()
+    c = candidats(f"adresse du projet : {t}", "saisi par le thermicien", 5.0)
+    if c:
+        return c
+    m = re.fullmatch(r"(\d{5})", t)
+    if m and (d := departement_du_code_postal(m.group(1))):
+        return [{"departement": d, "code_postal": m.group(1), "commune": None, "score": 7.0,
+                 "source": "saisi par le thermicien", "extrait": t}]
+    g = _geocoder_commune(t)
+    if g and g.get("code_postal") and (d := departement_du_code_postal(g["code_postal"])):
+        return [{"departement": d, "code_postal": g["code_postal"], "commune": g["commune"], "score": 7.0,
+                 "source": "saisi par le thermicien (commune trouvée dans la Base Adresse Nationale)", "extrait": t}]
+    return []
